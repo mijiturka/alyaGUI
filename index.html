@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+
+<head>
+    <title>GUI</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+
+<body>
+    <div id="chart">
+    </div>
+
+    <script src="http://threejs.org/build/three.min.js"></script>
+
+    <script src="http://threejs.org/examples/js/loaders/STLLoader.js"></script>
+    <script src="http://threejs.org/examples/js/wip/TypedGeometry.js"></script>
+
+    <script src="http://threejs.org/examples/js/Detector.js"></script>
+    <script src="http://threejs.org/examples/js/libs/stats.min.js"></script>
+    <script src="http://threejs.org/examples/js/libs/stats.min.js"></script>
+    <script src="OrbitControls.js"></script>
+
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+
+
+   <script>
+        window.d3windowHeight = window.innerHeight*2/5;
+        window.d3windowWidth = window.innerWidth/3;
+        window.GLwindowHeight = window.innerHeight-window.d3windowHeight;
+        window.GLwindowWidth = window.innerWidth/3;
+       d3windowH=400;
+    </script>
+    
+    <div id="wrapper" class="clear">
+    <div id="options">
+<form class="form-inline">
+          <fieldset>
+          <label>Color graph by:</label>
+          <select id="colorby">
+            <option value="CODE">Code</option>
+            <option value="CODE_RANK">Code Rank</option>
+            <option value="NBBOU">Number of boundaries</option>
+            <option value="NBINT">NBINT</option>
+            <option value="NELEM">Number of Elements</option>
+            <option value="NSUBD">Number of subdomains</option>
+            <option value="WORLD_RANK">World rank</option>
+          </select>
+          </fieldset>
+        </form>
+    </div>
+
+	<div id="controls">
+	<a href="#" onclick="toggleAnimation(); return false;">Toggle rotation</a>
+	</div>
+	
+	</div>
+
+    <div id="threeDplot">
+    </div>
+
+   <script src="d3graph.js"></script>
+
+   <script src="webGLplot.js"></script>
+
+<script>
+    window.addEventListener('resize', onWindowResize, false);
+    function onWindowResize() {
+        window.d3windowHeight = window.innerHeight*2/5;
+        window.d3windowWidth = window.innerWidth/3;
+        window.GLwindowHeight = window.innerHeight-window.d3windowHeight;
+        window.GLwindowWidth = window.innerWidth/3;
+        updateGLview();
+        updateSVG();
+    }
+</script>
+
+
+    <script>
+        function createVis(problemName){
+            d3.json('data/'+problemName+'.graph.json', function(error, graph) {
+                subdomains = graph.nodes.length;
+                createGraph(graph);
+            	//console.log(graph);
+                removeSTLs();
+                STLfileList = [];
+                for (n=1; n<subdomains; n++) {
+                    STLfileList.push('data/'+problemName+'-'+n+'.stl');
+                }
+                //console.log(STLfileList);
+                loadSTLs(STLfileList);
+            });
+        }
+        createVis("reactor");
+    </script>
+
+</body>
+
+</html>
