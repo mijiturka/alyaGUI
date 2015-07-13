@@ -207,24 +207,28 @@
         
         var timerx = Date.now() * 0.0002;
         var timerz = timerx;
+        var offsetx = 0, offsetz = 0;
         
         //save the current camera position
         function updateTimers() {
         	timerx = Math.acos( (camera.position.x - 0.5) / 2);
 			timerz = Math.asin( (camera.position.z) / 2);
+			offsetx = Date.now() * 0.0002 - timerx;
+			offsetz = Date.now() * 0.0002 - timerz;
 		}
         
 		function toggleAnimation() {
 			updateTimers();		
-			//at some point stops rotating :?	
 			rotate = !rotate;
 		}
 
         function render() {
 			if (rotate) {
 				//better way to do this?
-	            timerx += 0.01;
-    	        timerz += 0.01;
+	            //timerx += 0.01;
+    	        //timerz += 0.01;
+    	        timerx = Date.now() * 0.0002 - offsetx;
+    	        timerz = Date.now() * 0.0002 - offsetz;
     	        camera.position.x = 0.5 + Math.cos(timerx) * 2;
     	        camera.position.z = Math.sin(timerz) * 2;
 			}
