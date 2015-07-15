@@ -8,6 +8,8 @@
         var raycaster, mouse = new THREE.Vector2(), INTERSECTED, prevMaterial;
 
         var camera, cameraTarget, scene, renderer;
+        
+        selected_meshes = [];	//index=node. 1 if selected, 0 if not
 
         init();
         animate();
@@ -176,6 +178,7 @@
 					deselectMesh(selected_id);		
 					deselectNode(selected_id);						
 				}
+				updateDetails();
 			}
 
 		}
@@ -190,6 +193,7 @@
           	 	
 	        meshes[id].material = HighlightMaterial;
 			prevMaterial = HighlightMaterial;
+
         }
 
 

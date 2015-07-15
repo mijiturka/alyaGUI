@@ -1,3 +1,5 @@
+ var node_data, link_data;
+ 
  // D3 window
  function createSVG() {
      width = window.d3windowWidth;
@@ -12,7 +14,9 @@
      mousedown_node = null;
      mouseup_node = null;
      mousedown_mesh = null;
-     mouseup_mesh = null;;
+     mouseup_mesh = null;
+     
+     selected_nodes = [];	//index=node. 1 if selected, 0 if not
 
 
      // init svg
@@ -55,7 +59,38 @@ function updateSVG() {
     force.size([width, height]);
 }
 
+function printJSON(p) {
+	var html = "";
+	for (var key in p) {
+		if (p.hasOwnProperty(key)) {
+			html += key + ": " + p[key] + " <br />";
+		}
+	}
+	return html;
+}
+
+function updateDetails() {
+
+	var html = "Selected: <br />";
+	
+	for (var i=1; i<=selected_nodes.length; i++) {
+		if (selected_nodes[i]) {
+			html += "<b>Node "+ i + ": </b><br />";
+			//html += JSON.stringify(node_data[i-1].props, null, 1);
+			html += printJSON(node_data[i-1].props);
+			html += "<br />";
+		}
+	}
+
+	document.getElementById('details').innerHTML = html;
+	//console.log(node_data);
+	//console.log(graph.nodes);
+
+}
+
  function createGraph(graph) {
+ 	 node_data = graph.nodes;
+
      //Remove previous graph if we need to
      outer.selectAll("link").remove();
      outer.selectAll("node").remove();
@@ -128,10 +163,12 @@ function updateSVG() {
                          }
                          else { 
                          	selectNode(id);
-                         	selectMesh(id); 
+                         	selectMesh(id);                         	
                          }
                          
-                         selected_link = null;
+                         selected_link = null;                         
+                         
+                         updateDetails();
 
                      })
                  .on("mousedrag",
@@ -162,6 +199,7 @@ function updateSVG() {
 	       				//deselect only current node
                        	return d.index != id;
 	               	 	});
+		selected_nodes[id] = 0;
 			
 		}
 		
@@ -175,6 +213,7 @@ function updateSVG() {
        					}
                        	return d.index === id;
 	               	 	});
+		selected_nodes[id] = 1;
 		
 		}
 

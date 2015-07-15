@@ -10,10 +10,72 @@
 </head>
 
 <body>
-    <div id="chart">
-    </div>
+	
 
-    <script src="http://threejs.org/build/three.min.js"></script>
+
+
+	
+
+
+<div class="wrapper">
+
+
+ <div id="leftcolumn">
+
+
+  	<div id="chart"></div>
+
+
+	<div class="wrapper clear">
+ 
+     <div id="options">
+		<form class="form-inline">
+          <fieldset>
+          <label>Color graph by:</label>
+          <select id="colorby">
+            <option value="CODE">Code</option>
+            <option value="CODE_RANK">Code Rank</option>
+            <option value="NBBOU">Number of boundaries</option>
+            <option value="NBINT">NBINT</option>
+            <option value="NELEM">Number of Elements</option>
+            <option value="NSUBD">Number of subdomains</option>
+            <option value="WORLD_RANK">World rank</option>
+          </select>
+          </fieldset>
+        </form>
+     </div>
+
+	 <div id="controls">
+		<a href="#" onclick="toggleAnimation(); return false;">Toggle animation</a>
+	 </div>
+	
+	</div>
+
+
+    <div id="threeDplot"></div>
+    
+    
+ </div>   
+
+ <div id="rightcolumn">
+ 
+ 	<div id="details">
+ 		Selected: <br />None 
+ 	</div>
+ 	
+ </div>
+ 
+ 
+</div>
+    
+
+ 
+
+    
+
+
+
+	<script src="http://threejs.org/build/three.min.js"></script>
 
     <script src="STLLoader.js"></script>
     <script src="http://threejs.org/examples/js/wip/TypedGeometry.js"></script>
@@ -33,33 +95,6 @@
         window.GLwindowWidth = window.innerWidth/3;
        d3windowH=400;
     </script>
-    
-    <div id="wrapper" class="clear">
-    <div id="options">
-<form class="form-inline">
-          <fieldset>
-          <label>Color graph by:</label>
-          <select id="colorby">
-            <option value="CODE">Code</option>
-            <option value="CODE_RANK">Code Rank</option>
-            <option value="NBBOU">Number of boundaries</option>
-            <option value="NBINT">NBINT</option>
-            <option value="NELEM">Number of Elements</option>
-            <option value="NSUBD">Number of subdomains</option>
-            <option value="WORLD_RANK">World rank</option>
-          </select>
-          </fieldset>
-        </form>
-    </div>
-
-	<div id="controls">
-	<a href="#" onclick="toggleAnimation(); return false;">Toggle animation</a>
-	</div>
-	
-	</div>
-
-    <div id="threeDplot">
-    </div>
 
    <script src="d3graph.js"></script>
 

@@ -1,12 +1,20 @@
-#wrapper {
+.wrapper {
     margin: auto;
 }
+.clear:after {
+    clear: both;
+    display: table;
+    content: "";
+}
+#leftcolumn, #rightcolumn {
+    float: left;
+    width: 50%;
+    height: 100%;
+}  
 
-#options    {
-	
+#options    {	
     float: left;
 }
-
 #controls  {
 	margin-left: 15px;
 	padding: 10px;
@@ -14,18 +22,11 @@
     display: table-cell;
 }
 
-.clear:after {
-    clear: both;
-    display: table;
-    content: "";
+body {
+    font-family: Monospace;
+	background-color: #fff;
+    margin: 0px;
 }
-
-        body {
-            font-family: Monospace;
-            background-color: #fff;
-            margin: 0px;
-            overflow: hidden;
-        }
         #info {
             color: #fff;
             position: absolute;
@@ -35,6 +36,7 @@
             z-index: 100;
             display: block;
         }
+        
         a {
             color: skyblue
         }
