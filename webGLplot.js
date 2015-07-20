@@ -1,15 +1,17 @@
-
  // WebGL window
 
         if (!Detector.webgl) Detector.addGetWebGLMessage();
 
         var container, stats, controls;
-        var animation, rotate = true;
-        var raycaster, mouse = new THREE.Vector2(), INTERSECTED, prevMaterial;
+        var animation, rotate = false;
+        var raycaster, mouse = new THREE.Vector2(), INTERSECTED;
+        var prevMaterial;
 
         var camera, cameraTarget, scene, renderer;
         
-        selected_meshes = [];	//index=node. 1 if selected, 0 if not
+        var select_neighbours = true;
+        highlight_layers = []; 	//number of selections that cause highlighting for each mesh
+        selected_subdomains = [];	//index=subdomain. 1 if selected, 0 if not
 
         init();
         animate();
@@ -51,21 +53,32 @@
                 wireframe: true,
                 wireframeLinewidth: 1,
                 transparent: true,
-                opacity: 0.1
+                opacity: 0.1,
+                name: "Normal"
             });
             HighlightMaterial = new THREE.MeshBasicMaterial({
                 wireframe: true,
                 wireframeLinewidth: 1,
                 transparent: true,
                 opacity: 1.0,
-                color: 0xdd0c24
+                color: 0xdd0c24,
+                name: "Highlight"
+            });
+            HighlightMaterialOpaque = new THREE.MeshBasicMaterial({
+                wireframe: true,
+                wireframeLinewidth: 1,
+                transparent: true,
+                opacity: 0.1,
+                color: 0xdd0c24,
+                name: "Highlight Opaque"
             });
             HoverMaterial = new THREE.MeshBasicMaterial({
                 wireframe: true,
                 wireframeLinewidth: 1,
                 transparent: true,
                 opacity: 0.1,
-                color: 0x0000ff
+                color: 0x0000ff,
+                name: "Hover"
             });
 
             meshes = [];
@@ -168,32 +181,119 @@
 			
 			if (intersectsClick.length > 0) {
 			
-				selected_id = intersectsClick[0].object.realId;
-			
+				selected_id = intersectsClick[0].object.realId;		
+	
+				//doAllSelections(selected_id);
+				
 				if (prevMaterial != HighlightMaterial) {
-					selectMesh(selected_id);
-					selectNode(selected_id);
+					selectSubdomain(selected_id);
 				}
 				else {
-					deselectMesh(selected_id);		
-					deselectNode(selected_id);						
+					deselectSubdomain(selected_id);
 				}
+
 				updateDetails();
 			}
 
+		}
+		
+		function selectSubdomain(selected_id) {
+
+			//select neighbours
+			if (select_neighbours) {
+				
+				link_data[selected_id].forEach( function(id){
+					
+					highlight_layers[id]++;
+							
+					//don't make opaque if already selected
+					if (meshes[id].material != HighlightMaterial) {		
+
+						selectMesh(id, HighlightMaterialOpaque);
+						
+						selectNode(id, "node_neighbour");	
+					}
+				});
+			}
+										
+			//select this subdomain
+			selectMesh(selected_id);					
+					
+			selectNode(selected_id);
+			
+			selected_subdomains[selected_id] = 1;
+		
+		}
+		
+		function deselectSubdomain (selected_id) {
+					
+			//deselect neighbours
+			if (select_neighbours) {
+
+				link_data[selected_id].forEach( function(id){
+						
+					highlight_layers[id]--;				
+										
+					//don't deselect if already selected, or if highlighted by another selection
+					if (meshes[id].material != HighlightMaterial && highlight_layers[id] === 0) {
+						deselectMesh(id);
+								
+						deselectNode(id);
+					}
+				});
+			}
+					
+			//deselect this subdomain
+			if (highlight_layers[selected_id] === 0) {
+
+				deselectMesh(selected_id);
+						
+				deselectNode(selected_id);	
+						
+			}
+			else {
+											
+				prevMaterial = HighlightMaterialOpaque;
+				//debugger;
+				selectMesh(selected_id, HighlightMaterialOpaque);	
+						
+				deselectNode(selected_id);
+				selectNode(selected_id, "node_neighbour");			
+			}	
+						
+			selected_subdomains[selected_id] = 0;											
+		
+		}
+		
+		function deselectAll() {
+			
+			for (var i=0; i<selected_subdomains.length; i++) {
+				if (selected_subdomains[i]) {
+				
+					deselectSubdomain(i);
+					
+				}
+			}
+			
 		}
 
 		function deselectMesh(id) {
 	                   	 	
 	        meshes[id].material = NormalMaterial;
 			prevMaterial = NormalMaterial;
+			//debugger;
 		}
         
-        function selectMesh(id) {
-          	 	
-	        meshes[id].material = HighlightMaterial;
-			prevMaterial = HighlightMaterial;
-
+        function selectMesh(id, material) {
+   
+          	if (typeof material === "undefined") {
+          		material = HighlightMaterial;
+          	}
+          	
+	        meshes[id].material = material;
+	        prevMaterial = material;
+			//debugger;
+			
         }
 
 
@@ -205,7 +305,7 @@
             stats.update();
             controls.update();
             updateTimers();
-
+     
         }
         
         
@@ -224,6 +324,29 @@
 		function toggleAnimation() {
 			updateTimers();		
 			rotate = !rotate;
+		}
+		
+		function toggleNeighbours() {
+
+			var is_checked = false;
+			
+			if (document.getElementById('showNeighbours').checked) {
+				is_checked = true;            	
+        	} 
+        
+        	//update
+        	var really_selected = selected_subdomains.slice();
+        	deselectAll();
+        	selected_subdomains = really_selected.slice();
+
+            select_neighbours = is_checked;
+            	
+           	for (var i=0; i<selected_subdomains.length; i++) {
+           		if (selected_subdomains[i]) {
+           			selectSubdomain(i);
+           		}
+           	}
+        	
 		}
 
         function render() {
@@ -247,12 +370,16 @@
 				
 			if ( intersects.length > 0 ) {
 				
+				var id = intersects[ 0 ].object.realId;
+
 				if ( INTERSECTED != intersects[ 0 ].object ) {
 
 					if ( INTERSECTED ) INTERSECTED.material = prevMaterial;
 
 						INTERSECTED = intersects[ 0 ].object;
+
 						prevMaterial = INTERSECTED.material;
+						//debugger;
 						INTERSECTED.material = HoverMaterial;
 
 					}
@@ -266,13 +393,12 @@
 				}
 				
             renderer.render(scene, camera);
-
         }
         
 
 
         function loadSTLs(aList) {
-        var a = 0;
+        var realId = 0;
             aList.forEach(function(filepath) {
 				loader.load( filepath, function ( geometry ) {
 
@@ -287,8 +413,14 @@
             		//mesh.receiveShadow = true;
             		
             		//actual id kept in object - as opposed to scene id
-            		mesh.realId = a;
-            		a+=1;
+            		mesh.realId = realId;
+            		
+            		//prevMaterial.push(NormalMaterial);
+					highlight_layers[realId] = 0;
+
+        			realId++;
+        			
+
             		meshes.push(mesh);
                     
                     scene.add( mesh );
@@ -296,7 +428,6 @@
                 } );
              } );
              
-
          }
 
     function removeSTLs(){

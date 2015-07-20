@@ -46,7 +46,10 @@
      </div>
 
 	 <div id="controls">
-		<a href="#" onclick="toggleAnimation(); return false;">Toggle animation</a>
+		<a href="#" onclick="toggleAnimation(); return false;">Toggle animation</a> <br />
+		<a href="#" onclick="deselectAll(); return false;">Deselect all</a> <br />
+		<input type="checkbox" id="showNeighbours" checked="checked" autocomplete="off" onchange="toggleNeighbours(); return false;" /> Show neighbours <br />
+		
 	 </div>
 	
 	</div>
@@ -121,7 +124,7 @@
             	//console.log(graph);
                 removeSTLs();
                 STLfileList = [];
-                for (n=1; n<subdomains; n++) {
+                for (n=1; n<=subdomains; n++) {
                     STLfileList.push('data/'+problemName+'-'+n+'.stl');
                 }
                 //console.log(STLfileList);

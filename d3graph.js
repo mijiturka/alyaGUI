@@ -16,7 +16,7 @@
      mousedown_mesh = null;
      mouseup_mesh = null;
      
-     selected_nodes = [];	//index=node. 1 if selected, 0 if not
+     selected_nodes = [];	//index=subdomain. 1 if selected, 0 if not
 
 
      // init svg
@@ -73,23 +73,49 @@ function updateDetails() {
 
 	var html = "Selected: <br />";
 	
-	for (var i=1; i<=selected_nodes.length; i++) {
+	for (var i=0; i<selected_nodes.length; i++) {
 		if (selected_nodes[i]) {
-			html += "<b>Node "+ i + ": </b><br />";
+			html += "<b>Node "+ (i+1) + ": </b><br />";
 			//html += JSON.stringify(node_data[i-1].props, null, 1);
-			html += printJSON(node_data[i-1].props);
+			html += printJSON(node_data[i].props);
 			html += "<br />";
 		}
 	}
 
 	document.getElementById('details').innerHTML = html;
-	//console.log(node_data);
-	//console.log(graph.nodes);
-
+	
 }
 
- function createGraph(graph) {
- 	 node_data = graph.nodes;
+//links[i] contains an array of all of i's targets
+function getLinkData(graph) {
+ 
+ 	var links = {};
+	for (node = 0; node < graph.nodes.length; node++) {
+	
+		var keys = Object.keys(graph.links).filter(function(k) 
+		{ return graph.links[k].source === node});
+	
+		/*//check if faster
+		for (var k=0; k<keys.length; k++) {
+			var i = keys[k];
+			console.log(link_data[i].source + " " + link_data[i].target);
+		}*/
+		var targets = [];
+		keys.forEach( function(k) {
+			targets.push(graph.links[k].target);
+			});
+			
+		links[node] = targets;
+	}
+	return links;
+	
+}
+
+function createGraph(graph) {
+ 
+ 	 //copy object without extra JS properties
+	 node_data = JSON.parse(JSON.stringify(graph.nodes));  
+ 	 link_data = getLinkData(graph);
 
      //Remove previous graph if we need to
      outer.selectAll("link").remove();
@@ -97,6 +123,11 @@ function updateDetails() {
 
              link = vis.selectAll(".link"),
              node = vis.selectAll(".node");
+             
+             console.log(node_data.length);
+             for (var i=0; i<node_data.length; i++) {
+             	selected_nodes[i] = 0;
+             }
 
              colorby = "NELEM";
              var valmin = d3.min(function() {
@@ -158,13 +189,12 @@ function updateDetails() {
                          var id = d.index;
                          
                          if (is_selected) { 
-                         	deselectNode(id);
-                         	deselectMesh(id);
+                         	deselectSubdomain(id);
                          }
                          else { 
-                         	selectNode(id);
-                         	selectMesh(id);                         	
+                         	selectSubdomain(id);
                          }
+                         console.log(selected_nodes);
                          
                          selected_link = null;                         
                          
@@ -193,27 +223,38 @@ function updateDetails() {
     }
 
 	function deselectNode(id) {
+					               	 	
+		selected_nodes[id] = 0;
 		
-		var currnode = d3.selectAll(".node_selected");
-	    currnode.classed("node_selected", function(d, i) {
+		var nodes = d3.selectAll(".node_selected");
+	    nodes.classed("node_selected", function(d, i) {
 	       				//deselect only current node
                        	return d.index != id;
 	               	 	});
-		selected_nodes[id] = 0;
+	    
+	    var neighbours = d3.selectAll(".node_neighbour");
+	    neighbours.classed("node_neighbour", function(d, i) {
+	    				//deselect only current node
+                       	return d.index != id;
+	               	 	});
 			
 		}
 		
-	function selectNode(id) {
+	function selectNode(id, stroke_class) {
+	
+		if (typeof stroke_class === "undefined") {
+          	stroke_class = "node_selected";
+          	selected_nodes[id] = 1;
+        }
 		
-		var currnode = d3.selectAll(".node");
-       	currnode.classed("node_selected", function(d, i) {
+		var nodes = d3.selectAll(".node");
+       	nodes.classed(stroke_class, function(d, i) {
        					//don't remove class for nodes that are already selected
-       					if(this.classList.contains("node_selected")) {
+       					if(this.classList.contains(stroke_class)) {
        						return true;
        					}
                        	return d.index === id;
-	               	 	});
-		selected_nodes[id] = 1;
+	               	 	});		
 		
 		}
 
