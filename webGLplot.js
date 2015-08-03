@@ -8,10 +8,14 @@
         var prevMaterial;
 
         var camera, cameraTarget, scene, renderer;
+        var scale_factor = 6;
         
         var select_neighbours = true;
         highlight_layers = []; 	//number of selections that cause highlighting for each mesh
         selected_subdomains = [];	//index=subdomain. 1 if selected, 0 if not
+        
+        var bbox, groupGeometry = null, centerCube;
+        var positions = [], xhr;
 
         init();
         animate();
@@ -26,8 +30,8 @@
         window.GLwindowWidth
 
             camera = new THREE.PerspectiveCamera(35, window.GLwindowWidth / (window.GLwindowHeight ), 1, 15);
-            camera.position.set(3, 0.15, 3);
-            cameraTarget = new THREE.Vector3(0, -0.25, 0);
+            camera.position.set(1.5, 0.45, 1.5);
+            cameraTarget = new THREE.Vector3(0, 0.15, 0);
 
             scene = new THREE.Scene();
             scene.fog = new THREE.Fog(0x72645b, 2, 15);
@@ -120,6 +124,11 @@
             document.getElementById("threeDplot").addEventListener( 'mousemove', onMouseMove, false );
             document.getElementById("threeDplot").addEventListener( 'click', onClick, false );
             
+            // event points
+		
+			displayEvents();	
+			
+            
             // stats
 
             stats = new Stats();
@@ -128,6 +137,214 @@
             container.appendChild(stats.domElement);
 
         }
+
+		function getRelativePosition(x, y, z) {
+			
+			var point;
+			
+			//function called on vector
+			if (typeof y === "undefined") {
+				point = x.clone();	
+			} else {
+				point = new THREE.Vector3(x, y, z);
+			}
+			console.log("Point original:" + point.x + " " + point.y + " " + point.z);
+			
+			if (groupGeometry) {
+			
+				groupGeometry.computeBoundingBox();
+				point.add(getCenter());
+
+			}
+			
+			console.log("Point:" + point.x + " " + point.y + " " + point.z);
+			
+			return point;
+
+		}
+
+		function getCenter() {
+			
+			var center = new THREE.Vector3(0,0,0);
+			
+			//compute actual center
+			if (groupGeometry) {
+			
+				groupGeometry.computeBoundingBox();
+
+				center = new THREE.Vector3();
+				center.addVectors(groupGeometry.boundingBox.max, groupGeometry.boundingBox.min);
+				center.divideScalar(2);
+
+			}
+			//console.log(groupGeometry.boundingBox.max.z + " " + groupGeometry.boundingBox.min.z);
+			return center;
+		}
+		
+		function prepareCenter() {
+		
+			var geometry = new THREE.BoxGeometry( 0.01, 0.01, 0.01);
+			var material = new THREE.MeshBasicMaterial( {color: 0x3399CC});
+
+			centerCube = new THREE.Mesh( geometry, material);			
+				
+			centerCube.rotation.x = -0.5;
+			centerCube.rotation.y = -0.5;
+
+			scene.add(centerCube);
+			
+		}
+		
+		function displayCenter() {
+            
+            centerCube.position.copy( getCenter() );
+            
+            //centerCube.position.copy( getRelativePosition(0.503348E+00, 0.329510E+00, 0.714173E+00));
+            
+            //centerCube.position.copy( getRelativePosition(0.450000E+00, 0.850000E+00, 0.000000E+00));
+			
+		}		
+
+		function generatePointCloudGeometry(color, positions) {
+
+			var numPoints = 34; //TODO
+			var intensity = 1;
+
+			var geometry = new THREE.BufferGeometry();
+
+			var positions_relative = new Float32Array( numPoints*3 );
+			var colors = new Float32Array( numPoints*3 );
+			
+			//positions = [0.503348, 0.329510, 0.714173, 0, 0, 0];
+			
+			/*var pt = new THREE.Vector3(positions[0], positions[1], positions[2]);
+			var pt_relative_pos = getRelativePosition(positions[0], positions[1], positions[2]);
+			positions_relative[0] = pt_relative_pos.x;
+			positions_relative[1] = pt_relative_pos.y;
+			positions_relative[2] = pt_relative_pos.z;
+						var intensity = 1;
+						colors[ 0 ] = color.r * intensity;
+						colors[ 1 ] = color.g * intensity;
+						colors[ 2 ] = color.b * intensity;*/
+			
+			for (var i = 0; i < numPoints; i++) {
+				
+				var pt = new THREE.Vector3(positions[3*i], positions[3*i+1], positions[3*i+2]);
+				
+				var pt_relative_pos = getRelativePosition(pt);
+				positions_relative[ 3*i ] 	= pt_relative_pos.x;
+				positions_relative[ 3*i+1 ] = pt_relative_pos.y;
+				positions_relative[ 3*i+2 ] = pt_relative_pos.z;			
+						
+				colors[ 3*i ] 	= color.r * intensity;
+				colors[ 3*i+1 ] = color.g * intensity;
+				colors[ 3*i+2 ] = color.b * intensity;
+				console.log(i + " " + pt.x + " " + pt.y + " " + pt.z);
+				console.log(i + " " + pt_relative_pos.x + " " + pt_relative_pos.y + " " + pt_relative_pos.z);
+			}
+			
+			
+			var c = new THREE.Color(0x0000ff);
+			colors[0] = c.r * intensity;
+			colors[1] = c.g * intensity;
+			colors[2] = c.b * intensity;
+			
+			geometry.addAttribute( 'position', new THREE.BufferAttribute( positions_relative, 3 ) );
+			//geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+			geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+			geometry.computeBoundingBox();
+
+			return geometry;
+
+		}
+			
+		
+			
+		function generatePointcloud(color, positions) {
+		
+			var pointSize = 0.1;		
+			var sprite = THREE.ImageUtils.loadTexture( "disc.png" );
+			
+			var geometry = generatePointCloudGeometry( color, positions);
+			var material = new THREE.PointCloudMaterial( { size: pointSize, map: sprite, vertexColors: THREE.VertexColors, blending: THREE.AdditiveBlending, depthTest: false, transparent : true } );
+			//var material = new THREE.PointCloudMaterial( { size: pointSize, map: sprite, vertexColors: THREE.VertexColors, depthTest: false, transparent : true } );
+			var pointcloud = new THREE.PointCloud(geometry, material );
+
+			return pointcloud;
+
+		}
+		
+		//read event positions from file
+		
+		function displayEvents() {
+	
+			xhr = new XMLHttpRequest();
+			sendRequest('cavtet4-events.log', xhr);
+
+		}
+
+		function getPositions(response) {
+
+			var x, y, z;
+			var content = response.split("\n");
+			
+			for (var line=0; line < content.length; line++) {
+				
+				//get the last three numbers on this line
+				var xyz = content[line].split(" ").filter(
+					function(element) {
+						if (element === "0.000000E+00") return true;
+						return Number(element);
+					}).splice(-3);
+				
+				if (xyz != "") {
+					x = xyz[0];
+					y = xyz[1];
+					z = xyz[2];
+			
+					//division for DEMO:
+					positions.push(x/3);
+					positions.push(y/3);
+				   	positions.push(z/3);
+					
+					/*positions.push(x);
+					positions.push(y);
+				   	positions.push(z);*/
+				}
+			}
+				
+			positions = positions.map(parseFloat);
+		}
+
+		function sendRequest(url, xhr) {
+		
+			xhr.onload = function () {	};
+			xhr.open('GET', url);
+			xhr.onreadystatechange = clientSideUpdate;
+			xhr.send();
+		}
+
+		function clientSideUpdate() {
+
+			if (xhr.readyState === 4 && positions) {
+		
+				getPositions(this.responseText);
+				
+				setTimeout( function() {
+				var pcBuffer = generatePointcloud( new THREE.Color( 1,1,0 ), positions);
+
+				pcBuffer.position.set( 0, 0, 0 );		
+					
+				var scale = 1/scale_factor;
+               	//pcBuffer.scale.set(scale, scale, scale);
+
+				scene.add( pcBuffer );
+				} , 300);
+				
+			}
+		}
+
+
 
         function addShadowedLight(x, y, z, color, intensity) {
 
@@ -182,8 +399,6 @@
 			if (intersectsClick.length > 0) {
 			
 				selected_id = intersectsClick[0].object.realId;		
-	
-				//doAllSelections(selected_id);
 				
 				if (prevMaterial != HighlightMaterial) {
 					selectSubdomain(selected_id);
@@ -254,7 +469,7 @@
 			else {
 											
 				prevMaterial = HighlightMaterialOpaque;
-				//debugger;
+				
 				selectMesh(selected_id, HighlightMaterialOpaque);	
 						
 				deselectNode(selected_id);
@@ -281,7 +496,7 @@
 	                   	 	
 	        meshes[id].material = NormalMaterial;
 			prevMaterial = NormalMaterial;
-			//debugger;
+
 		}
         
         function selectMesh(id, material) {
@@ -292,19 +507,25 @@
           	
 	        meshes[id].material = material;
 	        prevMaterial = material;
-			//debugger;
 			
         }
 
 
 
+		
+
+
+
         function animate() {
+        
             animation = requestAnimationFrame(animate);
 
-            render();
+            render();		
             stats.update();
             controls.update();
             updateTimers();
+            
+            //displayCenter();        
      
         }
         
@@ -368,7 +589,10 @@
 			raycaster.setFromCamera( mouse, camera );
 			var intersects = raycaster.intersectObjects( scene.children );
 				
-			if ( intersects.length > 0 ) {
+				//TODO: mesh is not in 0 if there is a pointcloud on top (all pts included)
+				//if (intersects.length > 0) console.log(intersects.length);
+				
+			if ( intersects.length > 0 && intersects[0].object.name === "problem_mesh") {
 				
 				var id = intersects[ 0 ].object.realId;
 
@@ -379,7 +603,7 @@
 						INTERSECTED = intersects[ 0 ].object;
 
 						prevMaterial = INTERSECTED.material;
-						//debugger;
+
 						INTERSECTED.material = HoverMaterial;
 
 					}
@@ -390,43 +614,58 @@
 
 					INTERSECTED = null;
 
-				}
+			}
 				
             renderer.render(scene, camera);
         }
         
-
-
+        
+        
         function loadSTLs(aList) {
         var realId = 0;
+        group = new THREE.Object3D();
             aList.forEach(function(filepath) {
 				loader.load( filepath, function ( geometry ) {
 
                     var material = NormalMaterial;
                     var mesh = new THREE.Mesh( geometry, material );
                     
-                    mesh.position.set(0.0, -0.4, 0.0);
+                    mesh.position.set(0.0, 0.0, 0.0);
                 	mesh.rotation.set(-Math.PI / 2, 0, 0);
-                	mesh.scale.set(6, 6, 6);
+                	//mesh.scale.set(6, 6, 6);
+                	mesh.scale.set(scale_factor, scale_factor, scale_factor);
                 	
                 	mesh.castShadow = true;
             		//mesh.receiveShadow = true;
             		
             		//actual id kept in object - as opposed to scene id
             		mesh.realId = realId;
+            		mesh.name = "problem_mesh";
             		
-            		//prevMaterial.push(NormalMaterial);
 					highlight_layers[realId] = 0;
 
         			realId++;
         			
 
-            		meshes.push(mesh);
+            		meshes.push(mesh);                    
+                    group.add(mesh);
                     
-                    scene.add( mesh );
+                    scene.add(mesh);
                     
+                    
+                    mesh.updateMatrix();
+                    if (mesh.realId === 0) {
+                    	groupGeometry = mesh.geometry.clone();
+                    }
+                    else {
+                    	groupGeometry.merge(mesh.geometry, mesh.matrix);
+                    }
+                         
                 } );
              } );
+             
+             //scene.add(group);             
+             //prepareCenter();
              
          }
 
