@@ -10,12 +10,13 @@
         var camera, cameraTarget, scene, renderer;
         var scale_factor = 6;
         
-        var select_neighbours = true;
+        var select_neighbours = false;
         highlight_layers = []; 	//number of selections that cause highlighting for each mesh
         selected_subdomains = [];	//index=subdomain. 1 if selected, 0 if not
         
         var bbox, groupGeometry = null, centerCube;
         var positions = [], xhr;
+        var pcBuffer, pointcloud;
 
         init();
         animate();
@@ -29,12 +30,15 @@
             window.GLwindowHeight = window.innerHeight-window.d3windowHeight;
         window.GLwindowWidth
 
-            camera = new THREE.PerspectiveCamera(35, window.GLwindowWidth / (window.GLwindowHeight ), 1, 15);
-            camera.position.set(1.5, 0.45, 1.5);
+			camera = new THREE.PerspectiveCamera(35, window.GLwindowWidth / (window.GLwindowHeight ), 1, 40);
+            //camera = new THREE.PerspectiveCamera(35, window.GLwindowWidth / (window.GLwindowHeight ), 1, 15);
+            //camera.position.set(1.5, 0.45, 1.5);
+            camera.position.set(-5, 1.45, 9);
             cameraTarget = new THREE.Vector3(0, 0.15, 0);
 
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x72645b, 2, 15);
+            scene.fog = new THREE.Fog(0x72645b, 2, 20);
+            //scene.fog = new THREE.Fog(0x72645b, 2, 15);
 
 
             // Ground
@@ -47,9 +51,9 @@
             }));
             plane.rotation.x = -Math.PI / 2;
             plane.position.y = -0.5;
+            
             //with receiveShadow it doesn't show; without it you can't see the cylinder
             //scene.add(plane);
-
             //plane.receiveShadow = true;
 
             //var material = new THREE.MeshPhongMaterial( { ambient: 0x555555, color: 0xAAAAAA, specular: 0x111111, shininess: 200 } );
@@ -57,7 +61,7 @@
                 wireframe: true,
                 wireframeLinewidth: 1,
                 transparent: true,
-                opacity: 0.1,
+                //opacity: 0.1,
                 name: "Normal"
             });
             HighlightMaterial = new THREE.MeshBasicMaterial({
@@ -148,7 +152,7 @@
 			} else {
 				point = new THREE.Vector3(x, y, z);
 			}
-			console.log("Point original:" + point.x + " " + point.y + " " + point.z);
+			//console.log("Point original:" + point.x + " " + point.y + " " + point.z);
 			
 			if (groupGeometry) {
 			
@@ -157,7 +161,7 @@
 
 			}
 			
-			console.log("Point:" + point.x + " " + point.y + " " + point.z);
+			//console.log("Point:" + point.x + " " + point.y + " " + point.z);
 			
 			return point;
 
@@ -207,51 +211,58 @@
 
 		function generatePointCloudGeometry(color, positions) {
 
-			var numPoints = 34; //TODO
+			var numPoints = 34; //TODO: not a hard-coded number
 			var intensity = 1;
 
 			var geometry = new THREE.BufferGeometry();
 
+			//an array of size just numPoints creates weird errors...?
+			//var indices = new Float32Array( numPoints );
+			var indices = new Float32Array( numPoints*3 );
 			var positions_relative = new Float32Array( numPoints*3 );
-			var colors = new Float32Array( numPoints*3 );
-			
-			//positions = [0.503348, 0.329510, 0.714173, 0, 0, 0];
-			
-			/*var pt = new THREE.Vector3(positions[0], positions[1], positions[2]);
-			var pt_relative_pos = getRelativePosition(positions[0], positions[1], positions[2]);
-			positions_relative[0] = pt_relative_pos.x;
-			positions_relative[1] = pt_relative_pos.y;
-			positions_relative[2] = pt_relative_pos.z;
-						var intensity = 1;
-						colors[ 0 ] = color.r * intensity;
-						colors[ 1 ] = color.g * intensity;
-						colors[ 2 ] = color.b * intensity;*/
+			var colors = new Float32Array( numPoints*3 );			
 			
 			for (var i = 0; i < numPoints; i++) {
 				
-				var pt = new THREE.Vector3(positions[3*i], positions[3*i+1], positions[3*i+2]);
+				//indices[ i ] = i;
+				//indices[ 3*i ] = indices[ 3*i+1 ] = indices[ 3*i+2 ] = i;
+				indices[ 3*i ] = i;
+				indices[ 3*i+1 ] = i;
+				indices[ 3*i+2 ] = i;
 				
+				var pt = new THREE.Vector3(positions[3*i], positions[3*i+1], positions[3*i+2]);
 				var pt_relative_pos = getRelativePosition(pt);
 				positions_relative[ 3*i ] 	= pt_relative_pos.x;
 				positions_relative[ 3*i+1 ] = pt_relative_pos.y;
 				positions_relative[ 3*i+2 ] = pt_relative_pos.z;			
+				
+				//TEST: diagonal
+				/*positions_relative[ 3*i ] 	= i/9;
+				positions_relative[ 3*i+1 ] = i/5;
+				positions_relative[ 3*i+2 ] = 0;*/
 						
 				colors[ 3*i ] 	= color.r * intensity;
 				colors[ 3*i+1 ] = color.g * intensity;
-				colors[ 3*i+2 ] = color.b * intensity;
-				console.log(i + " " + pt.x + " " + pt.y + " " + pt.z);
-				console.log(i + " " + pt_relative_pos.x + " " + pt_relative_pos.y + " " + pt_relative_pos.z);
+				colors[ 3*i+2 ] = color.b * intensity;				
+				
+				//console.log(i + " " + pt.x + " " + pt.y + " " + pt.z);
+				//console.log(i + " " + pt_relative_pos.x + " " + pt_relative_pos.y + " " + pt_relative_pos.z);
 			}
 			
-			
+			//center point - testing
 			var c = new THREE.Color(0x0000ff);
 			colors[0] = c.r * intensity;
 			colors[1] = c.g * intensity;
 			colors[2] = c.b * intensity;
 			
+			//geometry.addAttribute( 'index', new THREE.BufferAttribute( indices, 1 ) );
+			
 			geometry.addAttribute( 'position', new THREE.BufferAttribute( positions_relative, 3 ) );
-			//geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-			geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+			geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );			
+			geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 3 ) );
+			
+			//console.log(geometry.attributes);
+			
 			geometry.computeBoundingBox();
 
 			return geometry;
@@ -262,13 +273,15 @@
 			
 		function generatePointcloud(color, positions) {
 		
-			var pointSize = 0.1;		
+			//var pointSize = 0.1;		
+			var pointSize = 0.5;
 			var sprite = THREE.ImageUtils.loadTexture( "disc.png" );
 			
 			var geometry = generatePointCloudGeometry( color, positions);
 			var material = new THREE.PointCloudMaterial( { size: pointSize, map: sprite, vertexColors: THREE.VertexColors, blending: THREE.AdditiveBlending, depthTest: false, transparent : true } );
 			//var material = new THREE.PointCloudMaterial( { size: pointSize, map: sprite, vertexColors: THREE.VertexColors, depthTest: false, transparent : true } );
 			var pointcloud = new THREE.PointCloud(geometry, material );
+			pointcloud.name = "pointcloud";
 
 			return pointcloud;
 
@@ -279,7 +292,7 @@
 		function displayEvents() {
 	
 			xhr = new XMLHttpRequest();
-			sendRequest('cavtet4-events.log', xhr);
+			sendRequest('runs/cavtet4/events/cavtet4-events.log', xhr);	//TODO
 
 		}
 
@@ -331,14 +344,15 @@
 				getPositions(this.responseText);
 				
 				setTimeout( function() {
-				var pcBuffer = generatePointcloud( new THREE.Color( 1,1,0 ), positions);
+				
+					pcBuffer = generatePointcloud( new THREE.Color( 1,1,0 ), positions);
 
-				pcBuffer.position.set( 0, 0, 0 );		
-					
-				var scale = 1/scale_factor;
-               	//pcBuffer.scale.set(scale, scale, scale);
-
-				scene.add( pcBuffer );
+					pcBuffer.position.set( 0, 0, 0 );							
+					var scale = 1/scale_factor;
+		           	//pcBuffer.scale.set(scale, scale, scale);
+		
+					scene.add( pcBuffer );
+				
 				} , 300);
 				
 			}
@@ -353,7 +367,7 @@
             scene.add(directionalLight);
 
             directionalLight.castShadow = true;
-            // directionalLight.shadowCameraVisible = true;
+            //directionalLight.shadowCameraVisible = true;
 
             var d = 1;
             directionalLight.shadowCameraLeft = -d;
@@ -569,7 +583,7 @@
            	}
         	
 		}
-
+		
         function render() {
 			if (rotate) {
 				//better way to do this?
@@ -581,7 +595,8 @@
     	        camera.position.z = Math.sin(timerz) * 2;
 			}
 
-            camera.lookAt(cameraTarget);
+            //camera.lookAt(cameraTarget);
+            camera.lookAt(getCenter());
             
 
             // interaction - find intersections
@@ -589,8 +604,67 @@
 			raycaster.setFromCamera( mouse, camera );
 			var intersects = raycaster.intersectObjects( scene.children );
 				
-				//TODO: mesh is not in 0 if there is a pointcloud on top (all pts included)
-				//if (intersects.length > 0) console.log(intersects.length);
+			//TODO: mesh is not in 0 if there is a pointcloud on top (all pts included)
+
+			if ( intersects.length > 0 && intersects[0].object.name === "pointcloud") {
+				//console.log(intersects[0].object.geometry.attributes.point_id.array);
+				//console.log(intersects[0].object.geometry.getAttribute("point_id")[0]);
+				//console.log(intersects[0].object.geometry);
+				//console.log(intersects);
+				
+				var pts_intersected = intersects.filter( function (inter) {
+						if (inter.object.name === "pointcloud") return true;
+						return false;
+					});
+				
+				//console.log(intersects.length + " vs " + pts_intersected.length);
+				
+				var pointcloud = intersects[0].object;
+				var colors = pointcloud.geometry.attributes.color;
+				
+				var ids = "";
+				
+				for (var i = 0; i < pts_intersected.length; i++) {
+
+					var id = pts_intersected[i].index;
+					
+					ids += id + " ";
+					
+					colors.array[id*3] = 255;
+					colors.array[id*3 + 1] = 255;
+					colors.array[id*3 + 2] = 255;				
+					
+					//console.log(bolimeguza[i].index);
+				}
+				
+				//console.log(ids);
+				
+				//console.log(pts_intersected.length);
+				
+				colors.needsUpdate = true;
+				
+			}
+						
+			//if ( intersects.length > 0 && intersects[0].object.name === "pointcloud") {
+				
+				//var pointcloud = intersects[0].object;
+				//var id = intersects[0].index;
+				
+//				console.log(id);
+				
+				//var colors = pointcloud.geometry.attributes.color;
+					
+					/*colors.array[id*3] = 255;
+					colors.array[id*3 + 1] = 255;
+					colors.array[id*3 + 2] = 255;*/
+					
+					
+					/*
+				colors.needsUpdate = true;							
+				*/
+//				pointcloud.geometry.attributes.color.needsUpdate = true;
+				
+			//}
 				
 			if ( intersects.length > 0 && intersects[0].object.name === "problem_mesh") {
 				

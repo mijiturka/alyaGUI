@@ -59,11 +59,42 @@ function updateSVG() {
     force.size([width, height]);
 }
 
-function printJSON(p) {
+function printJSON(p, nokeys) {
+
+	if (nokeys) {
+		return printJSONValues(p);
+	}
+
 	var html = "";
 	for (var key in p) {
 		if (p.hasOwnProperty(key)) {
-			html += key + ": " + p[key] + " <br />";
+			if (key === "general") {
+				html+= "<br />" + printJSON(p[key]) + "<br />";
+			}
+			else { 
+				html += key + ": " + p[key] + " <br />" 
+			};
+		}
+	}
+	return html;
+}
+
+function printJSONValues(p) {
+	var html = "";
+	for (var key in p) {
+		if (p.hasOwnProperty(key)) {
+			html += p[key] + " <br />"; 
+		}
+	}
+	return html;
+}
+
+function printRunList(p) {
+	var html = "";
+	for (var key in p) {
+		if (p.hasOwnProperty(key)) {
+			html += "<a href=\""+ "#" + "\" onclick=\"createVis(\"cavtet4\", p[key]); return false;\">" + 
+					p[key] + "</a><br />"; 
 		}
 	}
 	return html;
@@ -93,7 +124,7 @@ function getLinkData(graph) {
 	for (node = 0; node < graph.nodes.length; node++) {
 	
 		var keys = Object.keys(graph.links).filter(function(k) 
-		{ return graph.links[k].source === node});
+						{ return graph.links[k].source === node});
 	
 		/*//check if faster
 		for (var k=0; k<keys.length; k++) {
@@ -128,8 +159,8 @@ function createGraph(graph) {
              for (var i=0; i<node_data.length; i++) {
              	selected_nodes[i] = 0;
              }
-
-             colorby = "NELEM";
+             
+			 colorby = "NELEM";
              var valmin = d3.min(function() {
                  var temp = [];
                  graph.nodes.forEach(function(d) {

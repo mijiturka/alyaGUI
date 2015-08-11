@@ -48,7 +48,7 @@
 	 <div id="controls">
 		<a href="#" onclick="toggleAnimation(); return false;">Toggle animation</a> <br />
 		<a href="#" onclick="deselectAll(); return false;">Deselect all</a> <br />
-		<input type="checkbox" id="showNeighbours" checked="checked" autocomplete="off" onchange="toggleNeighbours(); return false;" /> Show neighbours <br />
+		<input type="checkbox" id="showNeighbours" autocomplete="off" onchange="toggleNeighbours(); return false;" /> Show neighbours <br />
 		
 	 </div>
 	
@@ -62,6 +62,17 @@
 
  <div id="rightcolumn">
  
+ 	<div id="runlist">
+ 		Ha!
+ 	</div>
+ 
+ 	<div id="probleminfo">
+ 		<p>
+ 		Problem name: <br />
+ 		Run name:
+ 		</p>
+ 	</div>
+ 	
  	<div id="details">
  		Selected: <br />None 
  	</div>
@@ -116,21 +127,58 @@
 
 
     <script>
-        function createVis(problemName){
-            d3.json('data/'+problemName+'.graph.json', function(error, graph) {
+    var dataFolder = "runs";
+    
+    var problemName = "cavtet4";
+    var runName = "cavtet4";
+    
+    	function displayRunList() {
+    	
+    		var xhr = new XMLHttpRequest();
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState == 4) {
+
+					var runs = JSON.parse(xhr.responseText);
+					document.getElementById("runlist").innerHTML = printRunList(runs);
+				}
+			};
+			xhr.open("GET", "runlist.php", true);
+			xhr.send(null);
+    	}
+    
+    	function updateProblemInfo() {
+    	
+    		var html = "<p> Problem name: " + problemName + 
+    			"<br /> Run name: " + runName + 
+    			"</p> <p>";
+    		d3.json(dataFolder+'/'+runName+'/alyarun.info.json', function(error, data) { 
+    			html += printJSON(data);
+    			html += "</p>";
+    			document.getElementById("probleminfo").innerHTML = html;
+    		});    		
+    	}
+    
+        function createVis(problemName, runName){
+        
+            d3.json(dataFolder+'/'+runName+"/"+problemName+'.graph.json', function(error, graph) {
                 subdomains = graph.nodes.length;
+                console.log(graph.nodes[0]);
                 createGraph(graph);
-            	//console.log(graph);
+            	
                 removeSTLs();
                 STLfileList = [];
-                for (n=1; n<=subdomains; n++) {
-                    STLfileList.push('data/'+problemName+'-'+n+'.stl');
+                for (n=1; n<subdomains; n++) {		//just for this problem
+                //for (n=1; n<=subdomains; n++) {
+                    STLfileList.push(dataFolder+'/'+runName+'/'+problemName+'-'+n+'.stl');
                 }
-                //console.log(STLfileList);
                 loadSTLs(STLfileList);
             });
         }
-        createVis("reactor");
+
+		displayRunList();
+        createVis(problemName, runName);
+        updateProblemInfo();
+        
     </script>
 
 </body>
