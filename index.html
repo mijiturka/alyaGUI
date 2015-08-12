@@ -29,6 +29,7 @@
 	<div class="wrapper clear">
  
      <div id="options">
+<!-- Should be removed for user tests, but messes up layout -->
 		<form class="form-inline">
           <fieldset>
           <label>Color graph by:</label>
@@ -92,7 +93,7 @@
 	<script src="http://threejs.org/build/three.min.js"></script>
 
     <script src="STLLoader.js"></script>
-    <script src="http://threejs.org/examples/js/wip/TypedGeometry.js"></script>
+<!--    <script src="http://threejs.org/examples/js/wip/TypedGeometry.js"></script> -->
 
     <script src="http://threejs.org/examples/js/Detector.js"></script>
     <script src="http://threejs.org/examples/js/libs/stats.min.js"></script>
@@ -132,6 +133,18 @@
     var problemName = "cavtet4";
     var runName = "cavtet4";
     
+    	function printRunList(p) {
+			var html = "";
+			for (var key in p) {
+				if (p.hasOwnProperty(key)) {
+					html += "<a href=\""+ "#" + "\" onclick=\"createVis(\"cavtet4\", p[key]); return false;\">" + 
+							p[key] + "</a><br />"; 
+				}
+			}
+			return html;
+		}
+    
+    	//reads run list
     	function displayRunList() {
     	
     		var xhr = new XMLHttpRequest();
@@ -146,6 +159,7 @@
 			xhr.send(null);
     	}
     
+    	//reads run info
     	function updateProblemInfo() {
     	
     		var html = "<p> Problem name: " + problemName + 
@@ -162,12 +176,12 @@
         
             d3.json(dataFolder+'/'+runName+"/"+problemName+'.graph.json', function(error, graph) {
                 subdomains = graph.nodes.length;
-                console.log(graph.nodes[0]);
                 createGraph(graph);
             	
                 removeSTLs();
                 STLfileList = [];
-                for (n=1; n<subdomains; n++) {		//just for this problem
+
+                for (n=1; n<subdomains; n++) {		//only for this problem - ignore node 0 (probably master node) TODO: check IF, when loading graph from JSON.
                 //for (n=1; n<=subdomains; n++) {
                     STLfileList.push(dataFolder+'/'+runName+'/'+problemName+'-'+n+'.stl');
                 }
@@ -176,6 +190,8 @@
         }
 
 		displayRunList();
+//JSON requests should be here
+//createVis() should be called inside its callback
         createVis(problemName, runName);
         updateProblemInfo();
         

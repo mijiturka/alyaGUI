@@ -1,22 +1,23 @@
+ // D3 window
+ 
  var node_data, link_data;
  
- // D3 window
  function createSVG() {
      width = window.d3windowWidth;
      height = window.d3windowHeight;
      fill = d3.scale.category20();
 
      // mouse event vars
-     selected_node = null;
-     selected_link = null;
-     selected_mesh = null;
+     selected_node 	= null;
+     selected_link 	= null;
+     selected_mesh 	= null;
      mousedown_link = null;
      mousedown_node = null;
-     mouseup_node = null;
+     mouseup_node 	= null;
      mousedown_mesh = null;
-     mouseup_mesh = null;
+     mouseup_mesh 	= null;
      
-     selected_nodes = [];	//index=subdomain. 1 if selected, 0 if not
+     selected_nodes = [];	// index=subdomain. 1 if selected, 0 if not
 
 
      // init svg
@@ -59,65 +60,8 @@ function updateSVG() {
     force.size([width, height]);
 }
 
-function printJSON(p, nokeys) {
-
-	if (nokeys) {
-		return printJSONValues(p);
-	}
-
-	var html = "";
-	for (var key in p) {
-		if (p.hasOwnProperty(key)) {
-			if (key === "general") {
-				html+= "<br />" + printJSON(p[key]) + "<br />";
-			}
-			else { 
-				html += key + ": " + p[key] + " <br />" 
-			};
-		}
-	}
-	return html;
-}
-
-function printJSONValues(p) {
-	var html = "";
-	for (var key in p) {
-		if (p.hasOwnProperty(key)) {
-			html += p[key] + " <br />"; 
-		}
-	}
-	return html;
-}
-
-function printRunList(p) {
-	var html = "";
-	for (var key in p) {
-		if (p.hasOwnProperty(key)) {
-			html += "<a href=\""+ "#" + "\" onclick=\"createVis(\"cavtet4\", p[key]); return false;\">" + 
-					p[key] + "</a><br />"; 
-		}
-	}
-	return html;
-}
-
-function updateDetails() {
-
-	var html = "Selected: <br />";
-	
-	for (var i=0; i<selected_nodes.length; i++) {
-		if (selected_nodes[i]) {
-			html += "<b>Node "+ (i+1) + ": </b><br />";
-			//html += JSON.stringify(node_data[i-1].props, null, 1);
-			html += printJSON(node_data[i].props);
-			html += "<br />";
-		}
-	}
-
-	document.getElementById('details').innerHTML = html;
-	
-}
-
 //links[i] contains an array of all of i's targets
+
 function getLinkData(graph) {
  
  	var links = {};
@@ -229,7 +173,7 @@ function createGraph(graph) {
                          
                          selected_link = null;                         
                          
-                         updateDetails();
+                         updateSubdomainDetails();
 
                      })
                  .on("mousedrag",
@@ -252,24 +196,6 @@ function createGraph(graph) {
 
              force.start();
     }
-
-	function deselectNode(id) {
-					               	 	
-		selected_nodes[id] = 0;
-		
-		var nodes = d3.selectAll(".node_selected");
-	    nodes.classed("node_selected", function(d, i) {
-	       				//deselect only current node
-                       	return d.index != id;
-	               	 	});
-	    
-	    var neighbours = d3.selectAll(".node_neighbour");
-	    neighbours.classed("node_neighbour", function(d, i) {
-	    				//deselect only current node
-                       	return d.index != id;
-	               	 	});
-			
-		}
 		
 	function selectNode(id, stroke_class) {
 	
@@ -287,7 +213,72 @@ function createGraph(graph) {
                        	return d.index === id;
 	               	 	});		
 		
+	}
+		
+	function deselectNode(id) {
+				               	 	
+		selected_nodes[id] = 0;
+	
+		var nodes = d3.selectAll(".node_selected");
+		nodes.classed("node_selected", function(d, i) {
+		   				//deselect only current node
+		               	return d.index != id;
+		           	 	});
+		
+		var neighbours = d3.selectAll(".node_neighbour");
+		neighbours.classed("node_neighbour", function(d, i) {
+						//deselect only current node
+		               	return d.index != id;
+		           	 	});
+		
+	}
+	
+	function updateSubdomainDetails() {
+
+		var html = "Selected: <br />";
+	
+		for (var i=0; i<selected_nodes.length; i++) {
+			if (selected_nodes[i]) {
+				html += "<b>Node "+ (i+1) + ": </b><br />";
+				//html += JSON.stringify(node_data[i-1].props, null, 1);
+				html += printJSON(node_data[i].props);
+				html += "<br />";
+			}
 		}
+
+		document.getElementById('details').innerHTML = html;
+	
+	}
+
+	function printJSON(p, nokeys) {
+
+		if (nokeys) {
+			return printJSONValues(p);
+		}
+
+		var html = "";
+		for (var key in p) {
+			if (p.hasOwnProperty(key)) {
+				if (key === "general") {
+					html+= "<br />" + printJSON(p[key]) + "<br />";
+				}
+				else { 
+					html += key + ": " + p[key] + " <br />" 
+				};
+			}
+		}
+		return html;
+	}
+
+	function printJSONValues(p) {
+		var html = "";
+		for (var key in p) {
+			if (p.hasOwnProperty(key)) {
+				html += p[key] + " <br />"; 
+			}
+		}
+		return html;
+	}
 
      function tick() {
          link.attr("x1", function(d) {
