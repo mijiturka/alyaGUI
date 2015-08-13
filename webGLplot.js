@@ -15,7 +15,7 @@
         selected_subdomains = [];	// index=subdomain. 1 if selected, 0 if not
         
         var groupGeometry = null;
-        var positions = [], xhr, pcBuffer;
+        var xhr, pcBuffer;
 
         init();
         animate();
@@ -186,10 +186,15 @@
 
 		}
 
+		// coordinates start at (0, 0, 0), i.e center of lower plane of mesh group.
+		
 		function getPositions(response) {
 
 			var x, y, z;
 			var content = response.split("\n");
+			
+			var positions = new Float32Array( content.length );
+			var pos_i = 0;
 			
 			for (var line = 0; line < content.length; line++) {
 				
@@ -201,17 +206,19 @@
 					}).splice(-3);
 				
 				if (xyz != "") {
-					x = xyz[0];
-					y = xyz[1];
-					z = xyz[2];
+					x = parseFloat(xyz[0]);
+					y = parseFloat(xyz[1]);
+					z = parseFloat(xyz[2]);
 			
-					positions.push(x);
-					positions.push(y);
-				   	positions.push(z);
+					positions[3*pos_i]	   = x;
+					positions[3*pos_i + 1] = y;
+					positions[3*pos_i + 2] = z;
+			
+					pos_i++;
 				}
 			}
-				
-			positions = positions.map(parseFloat);
+			
+			return positions;
 		}
 
 		function sendRequest(url, xhr) {
@@ -224,16 +231,17 @@
 
 		function clientSideUpdate() {
 
-			if (xhr.readyState === 4 && positions) {
+			if (xhr.readyState === 4) {
 		
-				getPositions(this.responseText);
+				var positions = getPositions(this.responseText);
 				
 				//TODO: do this once meshes are actually loaded...
 				setTimeout( function() {	
 							
 					pcBuffer = generatePointcloud( new THREE.Color( 1, 1, 0 ), positions);
 
-					pcBuffer.position.set( 0, 0, 0 );			
+					pcBuffer.position.set( 0, 0, 0 );	
+					pcBuffer.rotation.set(-Math.PI / 2, 0, 0);			
 									
 					//WHY? Shouldn't coordinates be scaled by scale_factor?
 					/*var scale = 1/scale_factor;
@@ -272,7 +280,6 @@
 			//an array of size just numPoints creates weird errors...?
 			//var indices = new Float32Array( numPoints );
 			var indices = new Float32Array( numPoints*3 );
-			var positions_relative = new Float32Array( numPoints*3 );
 			var colors = new Float32Array( numPoints*3 );			
 			
 			for (var i = 0; i < numPoints; i++) {
@@ -281,34 +288,20 @@
 				//indices[ 3*i ] = indices[ 3*i+1 ] = indices[ 3*i+2 ] = i;
 				indices[ 3*i ] = i;
 				indices[ 3*i+1 ] = i;
-				indices[ 3*i+2 ] = i;
-				
-				var pt = new THREE.Vector3(positions[3*i], positions[3*i+1], positions[3*i+2]);
-				var pt_relative_pos = getRelativePosition(pt);
-				positions_relative[ 3*i ] 	= pt_relative_pos.x;
-				positions_relative[ 3*i+1 ] = pt_relative_pos.y;
-				positions_relative[ 3*i+2 ] = pt_relative_pos.z;			
+				indices[ 3*i+2 ] = i;		
 						
 				colors[ 3*i ] 	= color.r * intensity;
 				colors[ 3*i+1 ] = color.g * intensity;
 				colors[ 3*i+2 ] = color.b * intensity;				
-				
-				//TEST: points along diagonal
-				/*positions_relative[ 3*i ] = i/9;
-				positions_relative[ 3*i+1 ] = i/5;
-				positions_relative[ 3*i+2 ] = 0;*/
-				
-				//console.log(i + " " + pt.x + " " + pt.y + " " + pt.z);
-				//console.log(i + " " + pt_relative_pos.x + " " + pt_relative_pos.y + " " + pt_relative_pos.z);
 			}
 			
 			//TEST: first point's in blue
 			var c = new THREE.Color(0x0000ff);
 			colors[0] = c.r * intensity;
 			colors[1] = c.g * intensity;
-			colors[2] = c.b * intensity;
+			colors[2] = c.b * intensity;			
 			
-			geometry.addAttribute( 'position', new THREE.BufferAttribute( positions_relative, 3 ) );
+			geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 			geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );	
 			//geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 1 ) );		
 			geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 3 ) );
@@ -318,6 +311,9 @@
 			return geometry;
 
 		}
+	
+		// functions for getting relative coordinates if coordinates start at the center of the mesh group.
+		// currently not used
 	
 		function getRelativePosition(x, y, z) {
 			
