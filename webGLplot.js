@@ -4,7 +4,7 @@
 
         var container, stats, controls;
         var rotate = false;
-        var raycaster, mouse = new THREE.Vector2(), INTERSECTED;
+        var raycaster, mouse = new THREE.Vector2(), INTERSECTED, INTERSECTED_POINTS;
         var prevMaterial;
 
         var camera, cameraTarget, scene, renderer;
@@ -16,6 +16,7 @@
         
         var groupGeometry = null;
         var xhr, pcBuffer;
+        var EPC_intensity, HEPC_intensity, SEPC_intensity;
 
         init();
         animate();
@@ -31,7 +32,8 @@
 	        //window.GLwindowWidth =
 
 			camera = new THREE.PerspectiveCamera(35, window.GLwindowWidth / (window.GLwindowHeight ), 1, 15);
-            camera.position.set(1.5, 0.45, 1.5);
+            //camera.position.set(1.5, 0.45, 1.5);
+            camera.position.set(-1.5, -0.5, 1.5);
             cameraTarget = new THREE.Vector3(0, 0.15, 0);
 
             scene = new THREE.Scene();            
@@ -91,6 +93,11 @@
                 color: 0x0000ff,
                 name: "Hover"
             });
+            
+            EventPointColor = new THREE.Color( 1, 1, 0 );
+            HighlightEventPointColor = new THREE.Color( 1, 1, 1 );            
+            SelectedEventPointColor = new THREE.Color( 0, 1, 0 );
+            EPC_intensity = 1, HEPC_intensity = 1, SEPC_intensity = 1;
 
             meshes = [];
             loader = new THREE.STLLoader();
@@ -124,6 +131,7 @@
             // camera controls
             
             controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.addEventListener( 'change', render );
             
             // interaction with separate meshes
             
@@ -238,7 +246,7 @@
 				//TODO: do this once meshes are actually loaded...
 				setTimeout( function() {	
 							
-					pcBuffer = generatePointcloud( new THREE.Color( 1, 1, 0 ), positions);
+					pcBuffer = generatePointcloud( EventPointColor, positions);
 
 					pcBuffer.position.set( 0, 0, 0 );	
 					pcBuffer.rotation.set(-Math.PI / 2, 0, 0);			
@@ -273,14 +281,17 @@
 		function generatePointCloudGeometry(color, positions) {
 
 			var numPoints = 34; //TODO: not a hard-coded number
-			var intensity = 1;
 
 			var geometry = new THREE.BufferGeometry();
 
 			//an array of size just numPoints creates weird errors...?
 			//var indices = new Float32Array( numPoints );
 			var indices = new Float32Array( numPoints*3 );
-			var colors = new Float32Array( numPoints*3 );			
+			var colors = new Float32Array( numPoints*3 );
+			var selected = new Uint8Array( numPoints );			
+
+			var i = numPoints;
+			while( i-- ) selected[i] = 0;
 			
 			for (var i = 0; i < numPoints; i++) {
 				
@@ -290,21 +301,22 @@
 				indices[ 3*i+1 ] = i;
 				indices[ 3*i+2 ] = i;		
 						
-				colors[ 3*i ] 	= color.r * intensity;
-				colors[ 3*i+1 ] = color.g * intensity;
-				colors[ 3*i+2 ] = color.b * intensity;				
+				colors[ 3*i ] 	= color.r * EPC_intensity;
+				colors[ 3*i+1 ] = color.g * EPC_intensity;
+				colors[ 3*i+2 ] = color.b * EPC_intensity;				
 			}
 			
 			//TEST: first point's in blue
 			var c = new THREE.Color(0x0000ff);
-			colors[0] = c.r * intensity;
-			colors[1] = c.g * intensity;
-			colors[2] = c.b * intensity;			
+			colors[0] = c.r * EPC_intensity;
+			colors[1] = c.g * EPC_intensity;
+			colors[2] = c.b * EPC_intensity;			
 			
 			geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 			geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );	
 			//geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 1 ) );		
 			geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 3 ) );
+			geometry.addAttribute( 'selected', new THREE.BufferAttribute( selected, 1 ) );			
 			
 			geometry.computeBoundingBox();
 
@@ -385,9 +397,25 @@
 			
 			vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 ).unproject(camera);
 			raycasterClick = new THREE.Raycaster( camera.position, vector.sub(camera.position).normalize() );
+			raycasterClick.params.PointCloud.threshold = 0.05;
+			
 			intersectsClick = raycasterClick.intersectObjects( scene.children );
 			
 			if ( intersectsClick.length > 0 ) {
+			
+				// points selection
+			
+				var pts_intersected = [];
+
+				intersectsClick.forEach( function(inter) {
+						if (inter.object.name === "pointcloud") pts_intersected.push(inter);
+					});
+					
+				if (pts_intersected) {												
+					selectPoints(pts_intersected);					
+				}
+			
+				// meshes selection
 			
 				selected_id = intersectsClick[0].object.realId;		
 				
@@ -426,7 +454,11 @@
            		}
            	}
         	
-		}
+		}	
+		
+		
+		
+		// mesh selection
 		
 		function selectSubdomain(selected_id) {
 
@@ -521,6 +553,87 @@
 		}
 
 
+		// point selection
+		
+		function highlightPoints(pts_intersected) {
+		
+		//console.log("highlight called: " + pts_intersected.length);
+			
+			var pointcloud = scene.getObjectByName( "pointcloud" );
+			var colors = pointcloud.geometry.attributes.color;
+			var selected = pointcloud.geometry.attributes.selected;
+		
+			for (var i = 0; i < pts_intersected.length; i++) {
+
+				var id = pts_intersected[i].index;		
+			
+				colors.array[id*3] 	   = HighlightEventPointColor.r * HEPC_intensity;
+				colors.array[id*3 + 1] = HighlightEventPointColor.g * HEPC_intensity;
+				colors.array[id*3 + 2] = HighlightEventPointColor.b * HEPC_intensity;
+				
+			}																
+		
+			colors.needsUpdate = true;
+		}
+		
+		// TODO: only gets updated once cursor is off the point. .updateMatrix() doesn't help		
+		
+		function selectPoints(pts_intersected) {
+
+		//console.log("select called: " + pts_intersected.length);
+
+			var pointcloud = scene.getObjectByName( "pointcloud" );
+			var colors = pointcloud.geometry.attributes.color;
+			var selected = pointcloud.geometry.attributes.selected;
+		
+			for (var i = 0; i < pts_intersected.length; i++) {
+
+				var id = pts_intersected[i].index;									
+			
+				colors.array[id*3] 	   = SelectedEventPointColor.r * SEPC_intensity;
+				colors.array[id*3 + 1] = SelectedEventPointColor.g * SEPC_intensity;
+				colors.array[id*3 + 2] = SelectedEventPointColor.b * SEPC_intensity;
+				
+				selected.array[id] = !selected.array[id];
+				
+			}											
+		
+			colors.needsUpdate = true;
+			selected.needsUpdate = true;
+			
+		}
+		
+		function resetPoints() {
+				
+		//console.log("reset called");
+		
+			var pointcloud = scene.getObjectByName( "pointcloud" );
+			var colors = pointcloud.geometry.attributes.color;
+			var selected = pointcloud.geometry.attributes.selected;		
+		
+			var pc_size = pointcloud.geometry.attributes.position.length;	
+									
+			for (var i = 0; i < pc_size; i++) {
+				
+				if ( !selected.array[i] ) {						
+					colors.array[i*3] 	  = EventPointColor.r * EPC_intensity;
+					colors.array[i*3 + 1] = EventPointColor.g * EPC_intensity;
+					colors.array[i*3 + 2] = EventPointColor.b * EPC_intensity;					
+				}				
+				// leave selected colour for previously selected points	
+				else {					
+					colors.array[i*3] 	  = SelectedEventPointColor.r * SEPC_intensity;
+					colors.array[i*3 + 1] = SelectedEventPointColor.g * SEPC_intensity;
+					colors.array[i*3 + 2] = SelectedEventPointColor.b * SEPC_intensity;				
+				}
+			
+			}
+			
+			colors.needsUpdate = true;
+			
+		}
+		
+
 		
         function animate() {
         
@@ -554,6 +667,7 @@
 		
 		
 		
+		
         function render() {
 			if (rotate) {
 				//better way to do this?
@@ -569,74 +683,77 @@
             //camera.lookAt(getCenter());
             
 
+
             // interaction - find intersections
 
 			raycaster.setFromCamera( mouse, camera );
-			var intersects = raycaster.intersectObjects( scene.children );
-				
-			// points intersection
+			raycaster.params.PointCloud.threshold = 0.05;
 
-			if ( intersects.length > 0 && intersects[0].object.name === "pointcloud") {
-				//console.log(intersects[0].object.geometry.attributes.point_id.array);
-				//console.log(intersects[0].object.geometry.getAttribute("point_id")[0]);
-				//console.log(intersects[0].object.geometry);
-				//console.log(intersects);
+			var intersects = raycaster.intersectObjects( scene.children );						
+
+			if ( intersects.length > 0) {
 				
-				var pts_intersected = intersects.filter( function (inter) {
-						if (inter.object.name === "pointcloud") return true;
-						return false;
+				var pts_intersected = [], meshes_intersected = [];
+
+				intersects.forEach( function(inter) {
+						if (inter.object.name === "pointcloud") pts_intersected.push(inter);
+						if (inter.object.name === "problem_mesh") meshes_intersected.push(inter);
 					});
+					
+				mesh_intersected = meshes_intersected[0];
+			
+			
+				// points intersection
 				
-				//console.log(intersects.length + " vs " + pts_intersected.length);
-				
-				var pointcloud = intersects[0].object;
-				var colors = pointcloud.geometry.attributes.color;
-				
-				var ids = "";
-				
-				for (var i = 0; i < pts_intersected.length; i++) {
+				if (pts_intersected.length > 0) {
 
-					var id = pts_intersected[i].index;
-					
-					ids += id + " ";
-					
-					colors.array[id*3] 	   = 255;
-					colors.array[id*3 + 1] = 255;
-					colors.array[id*3 + 2] = 255;				
+					if ( INTERSECTED_POINTS != pts_intersected ) {
+
+						if ( INTERSECTED_POINTS ) { resetPoints(); }
+
+						INTERSECTED_POINTS = pts_intersected;
+						highlightPoints(INTERSECTED_POINTS);
+					}						
+				}
+				
+				else {		// no points selected
+				
+					INTERSECTED_POINTS = null;
+					resetPoints();
 					
 				}
 				
-				//console.log(ids);
 				
-				//console.log(pts_intersected.length);
+				// meshes intersection
 				
-				colors.needsUpdate = true;
+				if (mesh_intersected) {				
 				
-			}
-			
-			// meshes intersection
-			// TODO: mesh is not in 0 if there is a pointcloud on top (all pts included)
-				
-			if ( intersects.length > 0 && intersects[0].object.name === "problem_mesh") {
-				
-				var id = intersects[ 0 ].object.realId;
+					var id = mesh_intersected.object.realId;
 
-				if ( INTERSECTED != intersects[ 0 ].object ) {
+					if ( INTERSECTED != mesh_intersected.object ) {
 
+						if ( INTERSECTED ) INTERSECTED.material = prevMaterial;
+
+						INTERSECTED = mesh_intersected.object;
+						prevMaterial = INTERSECTED.material;
+						INTERSECTED.material = HoverMaterial;
+					}
+				}
+				else {		// no mesh intersected
+		
 					if ( INTERSECTED ) INTERSECTED.material = prevMaterial;
-
-					INTERSECTED = intersects[ 0 ].object;
-					prevMaterial = INTERSECTED.material;
-					INTERSECTED.material = HoverMaterial;
-				}
-			}
-			else {
+					INTERSECTED = null;
 			
+				}	
+			}
+			
+			else {		// nothing intersected
+		
 				if ( INTERSECTED ) INTERSECTED.material = prevMaterial;
 				INTERSECTED = null;
-				
-			}
+				INTERSECTED_POINTS = null;
 			
+			}						
 				
             renderer.render(scene, camera);
         }
