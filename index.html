@@ -64,18 +64,22 @@
  <div id="rightcolumn">
  
  	<div id="runlist">
- 		Ha!
+ 		Runlist
  	</div>
  
- 	<div id="probleminfo">
+ 	<div id="problem_info">
  		<p>
  		Problem name: <br />
  		Run name:
  		</p>
  	</div>
  	
- 	<div id="details">
- 		Selected: <br />None 
+ 	<div id="event_details">
+ 		Selected Events: <br />
+ 	</div>
+ 	
+ 	<div id="subdomain_details">
+ 		Selected Subdomains: <br />None 
  	</div>
  	
  </div>
@@ -168,7 +172,7 @@
     		d3.json(dataFolder+'/'+runName+'/alyarun.info.json', function(error, data) { 
     			html += printJSON(data);
     			html += "</p>";
-    			document.getElementById("probleminfo").innerHTML = html;
+    			document.getElementById("problem_info").innerHTML = html;
     		});    		
     	}
     

@@ -235,7 +235,7 @@ function createGraph(graph) {
 	
 	function updateSubdomainDetails() {
 
-		var html = "Selected: <br />";
+		var html = "Selected Subdomains: <br />";
 	
 		for (var i=0; i<selected_nodes.length; i++) {
 			if (selected_nodes[i]) {
@@ -246,7 +246,46 @@ function createGraph(graph) {
 			}
 		}
 
-		document.getElementById('details').innerHTML = html;
+		document.getElementById('subdomain_details').innerHTML = html;
+	
+	}
+	
+	function updateEventDetails() {
+	
+		var pointcloud = scene.getObjectByName( "pointcloud" );
+		var selected_events = pointcloud.geometry.attributes.selected.array;	
+		var point_ids = pointcloud.geometry.attributes.point_id.array;	
+	
+		var num_selected = 0;
+		var html = "";
+	
+		for (var i=0; i<selected_events.length; i++) {
+			if (selected_events[i]) {
+
+				var event_id = point_ids[i]+1;
+				
+				html += "<b>Event "+ event_id + ": </b><br />";
+				
+				// image
+				// TODO: url
+				html += "<img src=\"" + "runs/cavtet4/events/cavtet4_";
+				html += event_id;
+				html += ".png\" />";				
+				html += "<br />";
+				
+				// details
+				html += printJSON( events_info[i] );
+				
+				num_selected ++;
+			}
+		}
+		
+		var txt;
+		if (num_selected == 1) comment = "<b> event selected: </b><br />";
+		else comment = "<b> events selected: </b><br />";
+		html = num_selected + comment + html;
+
+		document.getElementById('event_details').innerHTML = html;
 	
 	}
 

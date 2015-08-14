@@ -194,36 +194,46 @@
 
 		}
 
+		function getEventsInfo(response) {
+		
+			var content = response.split("\n");				
+			events_info = [];
+						
+			for (var line = 1; line < content.length; line++) {		// ignores first line
+				
+				var info_arr = content[line].split(" ").filter(function(n){ return n }); 	
+					
+				if (info_arr.length > 0) {
+					events_info.push({
+						time: 		parseFloat(info_arr[0]),
+						event: 		parseInt(info_arr[1]),
+						module: 	info_arr[2],
+						detection: 	info_arr[3],
+						rank: 		parseInt(info_arr[4]),
+						x: 			parseFloat(info_arr[5]),
+						y: 			parseFloat(info_arr[6]),
+						z: 			parseFloat(info_arr[7])
+					});													
+				}
+			}
+			
+			return events_info;
+			
+		}
+
 		// coordinates start at (0, 0, 0), i.e center of lower plane of mesh group.
 		
 		function getPositions(response) {
-
-			var x, y, z;
-			var content = response.split("\n");
 			
-			var positions = new Float32Array( content.length );
-			var pos_i = 0;
+			var events_info = getEventsInfo(response);
+			var positions = new Float32Array( events_info.length * 3 );
 			
-			for (var line = 0; line < content.length; line++) {
-				
-				//get the last three numbers on this line
-				var xyz = content[line].split(" ").filter(
-					function(element) {
-						if (element === "0.000000E+00") return true;
-						return Number(element);
-					}).splice(-3);
-				
-				if (xyz != "") {
-					x = parseFloat(xyz[0]);
-					y = parseFloat(xyz[1]);
-					z = parseFloat(xyz[2]);
+			for ( var i=0; i < events_info.length; i++) {
 			
-					positions[3*pos_i]	   = x;
-					positions[3*pos_i + 1] = y;
-					positions[3*pos_i + 2] = z;
+				positions[3*i]	   = events_info[i].x;
+				positions[3*i + 1] = events_info[i].y;
+				positions[3*i + 2] = events_info[i].z;
 			
-					pos_i++;
-				}
 			}
 			
 			return positions;
@@ -285,8 +295,8 @@
 			var geometry = new THREE.BufferGeometry();
 
 			//an array of size just numPoints creates weird errors...?
-			//var indices = new Float32Array( numPoints );
-			var indices = new Float32Array( numPoints*3 );
+			var indices = new Uint8Array( numPoints );
+			//var indices = new Float32Array( numPoints*3 );
 			var colors = new Float32Array( numPoints*3 );
 			var selected = new Uint8Array( numPoints );			
 
@@ -295,11 +305,11 @@
 			
 			for (var i = 0; i < numPoints; i++) {
 				
-				//indices[ i ] = i;
+				indices[ i ] = i;
 				//indices[ 3*i ] = indices[ 3*i+1 ] = indices[ 3*i+2 ] = i;
-				indices[ 3*i ] = i;
-				indices[ 3*i+1 ] = i;
-				indices[ 3*i+2 ] = i;		
+				//indices[ 3*i ] = i;
+				//indices[ 3*i+1 ] = i;
+				//indices[ 3*i+2 ] = i;		
 						
 				colors[ 3*i ] 	= color.r * EPC_intensity;
 				colors[ 3*i+1 ] = color.g * EPC_intensity;
@@ -314,8 +324,8 @@
 			
 			geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 			geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );	
-			//geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 1 ) );		
-			geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 3 ) );
+			geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 1 ) );		
+			//geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 3 ) );
 			geometry.addAttribute( 'selected', new THREE.BufferAttribute( selected, 1 ) );			
 			
 			geometry.computeBoundingBox();
@@ -412,7 +422,9 @@
 					});
 					
 				if (pts_intersected) {												
-					selectPoints(pts_intersected);					
+					selectPoints(pts_intersected);		
+					
+					updateEventDetails();			
 				}
 			
 				// meshes selection
