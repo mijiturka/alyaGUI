@@ -280,10 +280,12 @@ function createGraph(graph) {
 			}
 		}
 		
-		var txt;
-		if (num_selected == 1) comment = "<b> event selected: </b><br />";
-		else comment = "<b> events selected: </b><br />";
-		html = num_selected + comment + html;
+		if (num_selected > 0) {
+			var comment;
+			if (num_selected == 1) comment = "<b> event selected: </b><br />";
+			else comment = "<b> events selected: </b><br />";
+			html = num_selected + comment + html;
+		}
 
 		document.getElementById('event_details').innerHTML = html;
 	

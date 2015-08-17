@@ -74,6 +74,8 @@
  		</p>
  	</div>
  	
+ 	<div id="problem_charts"></div>
+ 	
  	<div id="event_details">
  		Selected Events: <br />
  	</div>
@@ -117,6 +119,8 @@
    <script src="d3graph.js"></script>
 
    <script src="webGLplot.js"></script>
+   
+   <script src="charts.js"></script>
 
 <script>
     window.addEventListener('resize', onWindowResize, false);
@@ -148,7 +152,7 @@
 			return html;
 		}
     
-    	//reads run list
+    	// reads run list
     	function displayRunList() {
     	
     		var xhr = new XMLHttpRequest();
@@ -163,7 +167,7 @@
 			xhr.send(null);
     	}
     
-    	//reads run info
+    	// reads run info
     	function updateProblemInfo() {
     	
     		var html = "<p> Problem name: " + problemName + 
@@ -174,7 +178,7 @@
     			html += "</p>";
     			document.getElementById("problem_info").innerHTML = html;
     		});    		
-    	}
+    	}    	
     
         function createVis(problemName, runName){
         
@@ -198,6 +202,7 @@
 //createVis() should be called inside its callback
         createVis(problemName, runName);
         updateProblemInfo();
+        createLineCharts();
         
     </script>
 

@@ -40,10 +40,8 @@ a {
 	color: skyblue
 }
 
-path {
+path.domain, path.range {
 	fill: none;
-	stroke: purple;
-	stroke-width: 1.5;
 }	  
 .axis {
 	shape-rendering: crispEdges;
