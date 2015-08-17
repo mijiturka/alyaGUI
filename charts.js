@@ -2,9 +2,7 @@
 
 //TODO: remove spaces from attributes
 
-function createChart(data_url, xAttribute, yAttributes, colors, manip_func) {
-
-	console.log("function called");
+function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, manip_func) {
 
 	// read data, calculate domains, display graph
 
@@ -37,6 +35,7 @@ function createChart(data_url, xAttribute, yAttributes, colors, manip_func) {
 				setAxesDomains(data);
 				showChart(data);
 				addGrids(true, true);
+				addLabels(xAttribute, yAttributes);
 
 			});
 
@@ -62,6 +61,7 @@ function createChart(data_url, xAttribute, yAttributes, colors, manip_func) {
 			setAxesDomains(data);
 			showChart(data);
 			addGrids(true, true);
+			addLabels(xAttribute, yAttributes);
 	
 		});
 	
@@ -71,35 +71,43 @@ function createChart(data_url, xAttribute, yAttributes, colors, manip_func) {
 
 	// graph variables
 
-	var WIDTH = 250,
-		HEIGHT = 125,
+	//var WIDTH = 250,
+	//	HEIGHT = 125,
+	var WIDTH = 500,
+		HEIGHT = 250,
 		MARGINS = {
 			top: 20,
 			right: 20,
 			bottom: 20,
 			left: 50
-			};
+			};	
+	
 	var	xScale = d3.scale.linear()
 				.domain([0,30])		// will be changed dynamically
-				.range([MARGINS.left, WIDTH - MARGINS.right]),
-		yScale = d3.scale.linear()
-				.domain([0,1])		// will be changed dynamically
-				.range([HEIGHT - MARGINS.top, MARGINS.bottom]),
+				.range([MARGINS.left, WIDTH - MARGINS.right]);
+	
+	var yScale;			
+	if (yScale_type === "log") {	yScale = d3.scale.log();	}
+	else {	yScale = d3.scale.linear();	}
+	yScale.domain([0,1])		// will be changed dynamically
+		  .range([HEIGHT - MARGINS.top, MARGINS.bottom]);
 		
-		xAxis = d3.svg.axis()
+	var	xAxis = d3.svg.axis()
 				.scale(xScale)
 				.ticks(4),
 		yAxis = d3.svg.axis()
 				.scale(yScale)
 				.orient("left")
-				.ticks(4);
+				.ticks(6);
 	var xTicks = 6, 
-		yTicks = 6;
+		yTicks = 0;
 
 	var linechart = d3.select("#problem_charts")
 					.append("svg")
-		            .attr("width", 275)
-		            .attr("height", 150);	
+		            //.attr("width", 275)
+		            //.attr("height", 150);	
+		            .attr("width", WIDTH + 25)
+		            .attr("height", HEIGHT + 25);	
 
 
 
@@ -162,6 +170,25 @@ function createChart(data_url, xAttribute, yAttributes, colors, manip_func) {
 
 	}
 
+	function addLabels(xLabel, yLabels) {
+		
+		linechart.append("text")
+			.attr("class", "x label")
+			.attr("text-anchor", "end")
+			.attr("x", WIDTH - MARGINS.right)
+			.attr("y", HEIGHT + MARGINS.bottom)
+			.text(xLabel);	
+				
+		linechart.append("text")
+			.attr("class", "y label")
+			.attr("text-anchor", "end")
+			.attr("y", 6)
+			.attr("dy", ".75em")
+			.attr("transform", "rotate(-90)")
+			.text(yLabels[0]);
+		
+	}
+
 	function addGrids(addx, addy) {
 
 		if (addx) {
@@ -210,11 +237,11 @@ function createLineCharts() {
 
 
 	chart1 = ['Momentum Residual', ' Continuity Residual'];
-	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart1, colors);
+	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart1, colors, "log");
 
 
 	chart2 = [' Velocity Linf', ' Pressure Linf'];
-	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart2, colors);
+	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart2, colors, "log");
 
 
 	colors3 = ['red', 'green', 'blue'];
@@ -226,12 +253,11 @@ function createLineCharts() {
 		return data;
 	}
 
-
 	chart3 = [' Velocity Maximum', ' Pressure Minimum', ' Pressure Maximum'];
-	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart3, colors3, getAbs);
+	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart3, colors3, "linear", getAbs);
 
 
 	chart4 = [' Momentum', ' Continuity'];
 	files = ["runs/cavtet4/cavtet4.solverCharts_1.csv", "runs/cavtet4/cavtet4.solverCharts_2.csv"];
-	createChart(files, xAtt, chart4, colors);
+	createChart(files, xAtt, chart4, colors, "linear");
 }
