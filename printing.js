@@ -17,6 +17,22 @@ function updateSubdomainDetails() {
 
 }
 	
+function showLargerImage(id) {
+
+	img_id = "img_" + id;
+	img = document.getElementById(img_id);
+
+	if (img.src.indexOf("/thumbs/") > -1) {		// is a thumbnail
+		new_src = img.src.replace("/thumbs/", "/");
+	}
+	else {
+		new_src = img.src.replace("events/", "events/thumbs/");	
+	}	
+
+	img.src = new_src;
+
+}
+	
 function updateEventDetails() {
 
 	var pointcloud = scene.getObjectByName( "pointcloud" );
@@ -34,10 +50,15 @@ function updateEventDetails() {
 			html += "<b>Event "+ event_id + ": </b><br />";
 			
 			// image
-			// TODO: url
-			html += "<img src=\"" + "runs/cavtet4/events/cavtet4_";
+			// TODO: custom urls
+			
+			html += "<img src=\"" + "runs/cavtet4/events/thumbs/cavtet4_";
 			html += event_id;
-			html += ".png\" />";				
+			html += ".png\"";
+			html += "class=\"event_img\" id=\"img_" + event_id + "\"";
+			html += "onclick=\"showLargerImage(" + event_id + ")\"";
+			html += " />";				
+			
 			html += "<br />";
 			
 			// details

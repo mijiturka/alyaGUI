@@ -50,6 +50,8 @@ a {
 	color: skyblue
 }
 
+.event_img { cursor: pointer; }
+
 path.domain, path.range {
 	fill: none;
 }	  
