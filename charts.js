@@ -2,7 +2,7 @@
 
 //TODO: remove spaces from attributes
 
-function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, manip_func) {
+function createChart(data_url, xAttribute, yAttributes, colors, WIDTH, HEIGHT, yScale_type, manip_func) {
 
 	// read data, calculate domains, display graph
 
@@ -75,11 +75,11 @@ function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, man
 		legendSpacing = 4,
 		legendRectH = legendRectSize + legendSpacing;
 
-	//var WIDTH = 250,
-	//	HEIGHT = 125,
-	var WIDTH = 500,
-		HEIGHT = 250,
-		MARGINS = {
+	if (!WIDTH || !HEIGHT) {
+		WIDTH = 250,
+		HEIGHT = 125;
+	}
+	var	MARGINS = {
 			top: 20,
 			right: 20,
 			bottom: 20,
@@ -108,8 +108,6 @@ function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, man
 
 	var linechart = d3.select("#problem_charts")
 					.append("svg")
-		            //.attr("width", 275)
-		            //.attr("height", 150);	
 		            .attr("width", WIDTH + 25)
 		            .attr("height", HEIGHT + (colors.length+1) * legendRectH);	
 
@@ -181,7 +179,7 @@ function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, man
 			.attr("class", "x label")
 			.attr("text-anchor", "end")
 			.attr("x", WIDTH - MARGINS.right)
-			.attr("y", HEIGHT + MARGINS.bottom)
+			.attr("y", HEIGHT + MARGINS.bottom/1.5)
 			.text(xLabel);	
 	
 
@@ -252,20 +250,20 @@ function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, man
 
 // usage
 
-// creates line charts
+// creates standard line charts
     	
-function createLineCharts() {
+function createLineCharts(width, height) {
 
 	xAtt = 'Iteration';
 	colors = ['green', 'blue'];
 
 
 	chart1 = ['Momentum Residual', ' Continuity Residual'];
-	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart1, colors, "log");
+	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart1, colors, width, height, "log");
 
 
 	chart2 = [' Velocity Linf', ' Pressure Linf'];
-	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart2, colors, "log");
+	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart2, colors, width, height, "log");
 
 
 	colors3 = ['red', 'green', 'blue'];
@@ -278,10 +276,10 @@ function createLineCharts() {
 	}
 
 	chart3 = [' Velocity Maximum', ' Pressure Minimum', ' Pressure Maximum'];
-	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart3, colors3, "linear", getAbs);
+	createChart("runs/cavtet4/cavtet4.cvgCharts2.csv", xAtt, chart3, colors3, width, height, "linear", getAbs);
 
 
 	chart4 = [' Momentum', ' Continuity'];
 	files = ["runs/cavtet4/cavtet4.solverCharts_1.csv", "runs/cavtet4/cavtet4.solverCharts_2.csv"];
-	createChart(files, xAtt, chart4, colors, "linear");
+	createChart(files, xAtt, chart4, colors);
 }
