@@ -23,7 +23,7 @@
  <div id="leftcolumn">
 
 
-  	<div id="chart"></div>
+	<div id="chart"></div>
 
 
 	<div class="wrapper clear">
@@ -56,13 +56,17 @@
 	</div>
 
 
-    <div id="threeDplot"></div>
+	<div id="threeDplot"></div>	
     
     
  </div>   
 
 
  <div id="middlecolumn">
+ 
+ 	<div id="event_list">
+ 		Events: <br />None
+ 	</div>
  
  	<div id="event_details">
  		Selected Events: <br />None
@@ -125,8 +129,11 @@
    <script src="d3graph.js"></script>
 
    <script src="webGLplot.js"></script>
-   
+
+   <script src="printing.js"></script>	   
    <script src="charts.js"></script>
+   
+   <script src="js/sorttable.js"></script>
 
 <script>
     window.addEventListener('resize', onWindowResize, false);
