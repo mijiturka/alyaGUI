@@ -71,6 +71,10 @@ function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, man
 
 	// graph variables
 
+	var legendRectSize = 18,
+		legendSpacing = 4,
+		legendRectH = legendRectSize + legendSpacing;
+
 	//var WIDTH = 250,
 	//	HEIGHT = 125,
 	var WIDTH = 500,
@@ -80,7 +84,7 @@ function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, man
 			right: 20,
 			bottom: 20,
 			left: 50
-			};	
+			};		
 	
 	var	xScale = d3.scale.linear()
 				.domain([0,30])		// will be changed dynamically
@@ -107,7 +111,7 @@ function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, man
 		            //.attr("width", 275)
 		            //.attr("height", 150);	
 		            .attr("width", WIDTH + 25)
-		            .attr("height", HEIGHT + 25);	
+		            .attr("height", HEIGHT + (colors.length+1) * legendRectH);	
 
 
 
@@ -171,22 +175,42 @@ function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, man
 	}
 
 	function addLabels(xLabel, yLabels) {
-		
+	
+		// x axis	
 		linechart.append("text")
 			.attr("class", "x label")
 			.attr("text-anchor", "end")
 			.attr("x", WIDTH - MARGINS.right)
 			.attr("y", HEIGHT + MARGINS.bottom)
 			.text(xLabel);	
-				
-		linechart.append("text")
-			.attr("class", "y label")
-			.attr("text-anchor", "end")
-			.attr("y", 6)
-			.attr("dy", ".75em")
-			.attr("transform", "rotate(-90)")
-			.text(yLabels[0]);
-		
+	
+
+		// y paths legend
+		var legend = linechart.selectAll('.legend')
+		  .data(colors)
+		  .enter()
+		  .append('g')
+		  .attr('class', 'legend')
+		  .attr('transform', function(d, i) {
+				var h = legendRectSize + legendSpacing;
+				var offset = h * colors.length;
+				var horz = MARGINS.left;
+				var vert = HEIGHT + (MARGINS.bottom * (colors.length+1)) + i * h - offset;
+
+				return 'translate(' + horz + ',' + vert + ')';
+		  });
+		  
+		legend.append('rect')                                     
+          .attr('width', legendRectSize)                          
+          .attr('height', legendRectSize)                         
+          .style('fill', function(d, i) {
+          	return colors[i];
+          });                                                                  
+          
+        legend.append('text')                                     
+          .attr('x', legendRectSize + legendSpacing)              
+          .attr('y', legendRectSize - legendSpacing)              
+          .text(function(d, i) { return yAttributes[i]; });
 	}
 
 	function addGrids(addx, addy) {
@@ -202,7 +226,7 @@ function createChart(data_url, xAttribute, yAttributes, colors, yScale_type, man
 				"x1" : function(d){ return xScale(d);},
 				"x2" : function(d){ return xScale(d);},
 			 	"y1" : MARGINS.right,
-				"y2" : HEIGHT        
+				"y2" : HEIGHT       
 			 });
 		}
 

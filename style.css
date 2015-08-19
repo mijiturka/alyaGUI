@@ -6,9 +6,19 @@
     display: table;
     content: "";
 }
-#leftcolumn, #rightcolumn {
+#leftcolumn {
+	float: left;
+	width: 35%;
+	height: 100%;
+}
+#middlecolumn {
     float: left;
-    width: 50%;
+    width: 30%;
+    height: 100%;
+}  
+#rightcolumn {
+    float: left;
+    width: 35%;
     height: 100%;
 }  
 
