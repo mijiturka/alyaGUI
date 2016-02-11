@@ -70,11 +70,6 @@ function getLinkData(graph) {
 		var keys = Object.keys(graph.links).filter(function(k) 
 						{ return graph.links[k].source === node});
 	
-		/*//check if faster
-		for (var k=0; k<keys.length; k++) {
-			var i = keys[k];
-			console.log(link_data[i].source + " " + link_data[i].target);
-		}*/
 		var targets = [];
 		keys.forEach( function(k) {
 			targets.push(graph.links[k].target);
@@ -88,11 +83,11 @@ function getLinkData(graph) {
 
 function createGraph(graph) {
  
- 	 //copy object without extra JS properties
+ 	 // copy object without extra JS properties
 	 node_data = JSON.parse(JSON.stringify(graph.nodes));  
  	 link_data = getLinkData(graph);
 
-     //Remove previous graph if we need to
+     // Remove previous graph if we need to
      outer.selectAll("link").remove();
      outer.selectAll("node").remove();
 
@@ -206,7 +201,7 @@ function createGraph(graph) {
 		
 		var nodes = d3.selectAll(".node");
        	nodes.classed(stroke_class, function(d, i) {
-       					//don't remove class for nodes that are already selected
+       					// don't remove class for nodes that are already selected
        					if(this.classList.contains(stroke_class)) {
        						return true;
        					}
@@ -221,13 +216,13 @@ function createGraph(graph) {
 	
 		var nodes = d3.selectAll(".node_selected");
 		nodes.classed("node_selected", function(d, i) {
-		   				//deselect only current node
+		   				// deselect only current node
 		               	return d.index != id;
 		           	 	});
 		
 		var neighbours = d3.selectAll(".node_neighbour");
 		neighbours.classed("node_neighbour", function(d, i) {
-						//deselect only current node
+						// deselect only current node
 		               	return d.index != id;
 		           	 	});
 		
