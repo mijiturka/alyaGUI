@@ -4,11 +4,12 @@
 
         var container, stats, controls;
         var rotate = false;
+		var debug = false;
         var raycaster, mouse = new THREE.Vector2(), INTERSECTED, INTERSECTED_POINTS;
         var prevMaterial;
 
         var camera, cameraTarget, scene, renderer;
-        var scale_factor = 6;
+        //var scale_factor = 6;		// not currently used: for scaling entire mesh
         
         var select_neighbours = false;
         highlight_layers = [];		// number of selections that cause highlighting for each mesh
@@ -28,11 +29,9 @@
 
 			//need this? same value before and after setting
             window.GLwindowHeight = window.innerHeight-window.d3windowHeight;
-            //commented from the start - need this?
-	        //window.GLwindowWidth =
 
 			camera = new THREE.PerspectiveCamera(35, window.GLwindowWidth / (window.GLwindowHeight ), 1, 15);
-            //camera.position.set(1.5, 0.45, 1.5);
+            //camera.position.set(1.5, 0.45, 1.5);	// original camera position
             camera.position.set(-1.5, -0.5, 1.5);
             cameraTarget = new THREE.Vector3(0, 0.15, 0);
 
@@ -40,13 +39,15 @@
             scene.fog = new THREE.Fog(0x72645b, 2, 15);
 
 			//for getting a normal view of cube, when cube scaled x6
-            /*camera = new THREE.PerspectiveCamera(35, window.GLwindowWidth / (window.GLwindowHeight ), 1, 40);
-            camera.position.set(-5, 1.45, 9);
-            scene.fog = new THREE.Fog(0x72645b, 2, 20);*/
+			if (scale_factor == 6) {
+		        camera = new THREE.PerspectiveCamera(35, window.GLwindowWidth / (window.GLwindowHeight ), 1, 40);
+		        camera.position.set(-5, 1.45, 9);
+		        scene.fog = new THREE.Fog(0x72645b, 2, 20);
+			}
 
             // ground
 
-			//possibly better to use PlaneBufferGeometry
+			// possibly better to use PlaneBufferGeometry
             var plane = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshPhongMaterial({
                 ambient: 0x999999,
                 color: 0x999999,
@@ -54,7 +55,7 @@
             }));
             plane.rotation.x = -Math.PI / 2;
             plane.position.y = -0.5;            
-            //with receiveShadow it doesn't show; without it you can't see the cylinder
+            // with receiveShadow plane doesn't show; without it you can't see the cylinder
             //scene.add(plane);
             //plane.receiveShadow = true;
 
@@ -104,7 +105,7 @@
 
             // lights 
             
-            //seems they don't change anything because of using wireframe.
+            // they don't change anything when using wireframe.
 
             scene.add(new THREE.AmbientLight(0x777777));
 
@@ -161,7 +162,7 @@
             scene.add(directionalLight);
 
             directionalLight.castShadow = true;
-            //directionalLight.shadowCameraVisible = true;	//for debugging
+            if (debug) { directionalLight.shadowCameraVisible = true; }
 
             var d = 1;
             directionalLight.shadowCameraLeft = -d;
@@ -199,7 +200,7 @@
 			var content = response.split("\n");				
 			events_info = [];
 						
-			for (var line = 1; line < content.length; line++) {		// ignores first line
+			for (var line = 1; line < content.length; line++) {		// ignores first line (table indices)
 				
 				var info_arr = content[line].split(" ").filter(function(n){ return n }); 	
 					
@@ -260,10 +261,6 @@
 
 					pcBuffer.position.set( 0, 0, 0 );	
 					pcBuffer.rotation.set(-Math.PI / 2, 0, 0);			
-									
-					//WHY? Shouldn't coordinates be scaled by scale_factor?
-					/*var scale = 1/scale_factor;
-		           	pcBuffer.scale.set(scale, scale, scale);*/
 		
 					scene.add( pcBuffer );
 									
@@ -294,9 +291,7 @@
 
 			var geometry = new THREE.BufferGeometry();
 
-			//an array of size just numPoints creates weird errors...?
 			var indices = new Uint8Array( numPoints );
-			//var indices = new Float32Array( numPoints*3 );
 			var colors = new Float32Array( numPoints*3 );
 			var selected = new Uint8Array( numPoints );			
 
@@ -306,26 +301,23 @@
 			for (var i = 0; i < numPoints; i++) {
 				
 				indices[ i ] = i;
-				//indices[ 3*i ] = indices[ 3*i+1 ] = indices[ 3*i+2 ] = i;
-				//indices[ 3*i ] = i;
-				//indices[ 3*i+1 ] = i;
-				//indices[ 3*i+2 ] = i;		
 						
 				colors[ 3*i ] 	= color.r * EPC_intensity;
 				colors[ 3*i+1 ] = color.g * EPC_intensity;
 				colors[ 3*i+2 ] = color.b * EPC_intensity;				
 			}
 			
-			//TEST: first point's in blue
-			var c = new THREE.Color(0x0000ff);
-			colors[0] = c.r * EPC_intensity;
-			colors[1] = c.g * EPC_intensity;
-			colors[2] = c.b * EPC_intensity;			
+			//FOR TESTING: first point's in blue
+			if (debug) { 
+				var c = new THREE.Color(0x0000ff);
+				colors[0] = c.r * EPC_intensity;
+				colors[1] = c.g * EPC_intensity;
+				colors[2] = c.b * EPC_intensity;
+			}			
 			
 			geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 			geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );	
 			geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 1 ) );		
-			//geometry.addAttribute( 'point_id', new THREE.BufferAttribute( indices, 3 ) );
 			geometry.addAttribute( 'selected', new THREE.BufferAttribute( selected, 1 ) );			
 			
 			geometry.computeBoundingBox();
@@ -349,14 +341,14 @@
 				point = new THREE.Vector3(x, y, z);
 			}
 
-			//console.log("Point original:" + point.x + " " + point.y + " " + point.z);
+			if (debug) { console.log("Point original:" + point.x + " " + point.y + " " + point.z); }
 			
 			if (groupGeometry) {
 				point.add(getCenter());
 			}
 			else { console.log("Warning: Mesh group bounding box was not loaded on time, point positions may be incorrect"); }
 			
-			//console.log("Point:" + point.x + " " + point.y + " " + point.z);
+			if (debug) { console.log("Point:" + point.x + " " + point.y + " " + point.z); }
 			
 			return point;
 			
@@ -377,7 +369,7 @@
 			}
 			else { console.log("Warning: Mesh group bounding box was not loaded on time, center may be incorrect"); }
 			
-			//console.log(groupGeometry.boundingBox.max.z + " " + groupGeometry.boundingBox.min.z);
+			if (debug) { console.log(groupGeometry.boundingBox.max.z + " " + groupGeometry.boundingBox.min.z); }
 			
 			return center;
 			
@@ -569,7 +561,7 @@
 		
 		function highlightPoints(pts_intersected) {
 		
-		//console.log("highlight called: " + pts_intersected.length);
+		if (debug) { console.log("highlight called: " + pts_intersected.length); }
 			
 			var pointcloud = scene.getObjectByName( "pointcloud" );
 			var colors = pointcloud.geometry.attributes.color;
@@ -592,7 +584,7 @@
 		
 		function selectPoints(pts_intersected) {
 
-		//console.log("select called: " + pts_intersected.length);
+		if (debug) { console.log("select called: " + pts_intersected.length); }
 
 			var pointcloud = scene.getObjectByName( "pointcloud" );
 			var colors = pointcloud.geometry.attributes.color;
@@ -617,7 +609,7 @@
 		
 		function resetPoints() {
 				
-		//console.log("reset called");
+		if (debug) { console.log("reset called"); }
 		
 			var pointcloud = scene.getObjectByName( "pointcloud" );
 			var colors = pointcloud.geometry.attributes.color;
@@ -692,7 +684,7 @@
 			}
 
             camera.lookAt(cameraTarget);
-            //camera.lookAt(getCenter());
+            //camera.lookAt(getCenter());		// alternative: point camera at center of mesh
             
 
 
@@ -792,9 +784,10 @@
                     
                     mesh.position.set(0.0, 0.0, 0.0);
                 	mesh.rotation.set(-Math.PI / 2, 0, 0);
-                	//mesh.scale.set(6, 6, 6);
-                	//mesh.scale.set(scale_factor, scale_factor, scale_factor);
-                	//mesh.scale.set(1, 1, 1);
+					// for scaling:
+					if (scale_factor) {
+                		mesh.scale.set(scale_factor, scale_factor, scale_factor);
+					}
                 	
                 	mesh.castShadow = true;
             		//mesh.receiveShadow = true;            		                    
@@ -828,4 +821,4 @@
 			camera.aspect = window.GLwindowWidth / (window.GLwindowHeight);
 			camera.updateProjectionMatrix();
 			renderer.setSize(window.GLwindowWidth, window.GLwindowHeight);
-		}
+		}consol
